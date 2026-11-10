@@ -1,6 +1,6 @@
 # volati elite
 
-Volati Elite is a desktop interface for [Volatility 3](https://github.com/volatilityfoundation/volatility3). I built it to make memory analysis easier to navigate: choose an image, run the plugins you need, filter their output and keep your investigation notes in the same window.
+Volati Elite is a Windows desktop interface for [Volatility 3](https://github.com/volatilityfoundation/volatility3). It brings plugin execution, result analysis and investigation notes into a single workspace.
 
 **Early test version.** Stability, performance and everyday usability are still being improved. This is an independent project, not an official Volatility Foundation product.
 
@@ -8,7 +8,7 @@ Volati Elite is a desktop interface for [Volatility 3](https://github.com/volati
 
 [Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.9-test.1)
 
-Download `VolatiElite.exe` from the pre-release assets and run it. Python, Node.js and a separate browser are not required. Checksums are provided with the download. The executable is currently unsigned.
+Download `VolatiElite.exe` from the pre-release assets and run it.
 
 ## Quick start
 
@@ -18,7 +18,7 @@ Download `VolatiElite.exe` from the pre-release assets and run it. Python, Node.
 4. Filter the results, bookmark useful rows and write down your findings in the investigation notebook.
 5. Export the relevant results as CSV or JSON, or save your notes as TXT.
 
-The original image is read from its existing location. Case data, results, caches and notes are stored locally. The profile folder remains `%LOCALAPPDATA%\Vol3Studio` for compatibility with earlier test builds.
+The original image is read from its existing location. Case data, results, caches and notes are stored locally. The profile folder remains `%LOCALAPPDATA%\VolatiElite` for compatibility with earlier test builds.
 
 ## What is included
 
@@ -42,35 +42,11 @@ Windows is the desktop target. Analysis support for Windows, Linux and macOS ima
 
 ![Volati Elite plugin library](docs/images/plugins.png)
 
-## Build from source
-
-The current test build uses Python 3.12, TypeScript/React, PySide6/Qt and PyInstaller. Run these commands on Windows with Python 3.12 and Node.js available:
-
-```powershell
-git clone https://github.com/serrr666/volati-elite.git
-cd volati-elite
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-build.lock.txt
-cd frontend
-npm ci
-npm run build
-cd ..
-.\.venv\Scripts\python.exe desktop_entry.py
-```
-
-To build the portable executable:
-
-```powershell
-.\.venv\Scripts\python.exe -m PyInstaller --noconfirm VolatiElite.spec
-```
-
-The executable will be written to `dist/VolatiElite.exe`.
-
 ## Testing and feedback
 
 This is a test project, not a validated forensic suite. Image compatibility, plugins and resource usage need further testing. Cross-check important findings with the underlying engine; an empty result does not prove an artifact is absent.
 
-Bug reports are welcome in [Issues](https://github.com/serrr666/volati-elite/issues). Include the app version, plugin, image format and steps to reproduce. Please do not attach private memory images, credentials or unreviewed case data. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Bug reports are welcome in [Issues](https://github.com/serrr666/volati-elite/issues), or in Telegram direct @serpf. Include the app version, plugin, image format and steps to reproduce. Please do not attach private memory images, credentials or unreviewed case data. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License and author
 
