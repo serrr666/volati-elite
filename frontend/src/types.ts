@@ -1,0 +1,10 @@
+export type OS = 'windows'|'linux'|'mac'|'unknown';
+export type Plugin = {id:string;name:string;os:string;category:string;description:string;version:string;args:Argument[]};
+export type Argument = {name:string;type:string;description:string;optional:boolean;default:unknown;choices:string[]};
+export type Case = {reused?:boolean;id:string;name:string;path:string;os:OS;kind:string;source_kind?:string;size:number;mtime_ns:number;sha256:string|null;hash_status:string;created:string;notes:string;run_count?:number;bookmark_count?:number;hash_progress?:number;detect_status?:string;detected_banner?:string;image_format?:string;detect_message?:string};
+export type Run = {id:string;case_id:string;plugin:string;params:Record<string,unknown>;status:string;progress:number;message:string;created:string;started:string|null;finished:string|null;row_count:number;columns:string[];command:string;error:string|null;studio_version?:string;studio_sha256?:string;engine_version:string;input_sha256:string|null;offline:boolean;purpose?:string;pipeline_summary?:{limit_reached?:boolean;scanned_records?:number;output_rows?:number;processed_units?:number;total_units?:number;unit?:string}};
+export type ResultRow = {index:number;depth:number;data:Record<string,unknown>};
+export type Bookmark = {id:string;case_id:string;run_id:string;row_idx:number;note:string;created:string;plugin:string;data:Record<string,unknown>};
+export type Health = {build_date?:string;app:string;version:string;engine_version:string;engine_status:string;plugin_count:number;warnings:string[];data_dir:string};
+export type Settings = {offline:boolean;symbol_dirs:string[];plugin_dirs:string[];memory_limit_mb?:number};
+export type View = 'overview'|'plugins'|'results'|'bookmarks'|'timeline'|'settings'|'pipeline';

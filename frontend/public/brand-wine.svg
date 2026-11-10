@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="wine" x1="310" y1="56" x2="650" y2="958" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#650c3c"/><stop offset="1" stop-color="#350820"/>
+    </linearGradient>
+  </defs>
+  <path d="M512 56 543 128 619 137 563 188 578 263 512 225 446 263 461 188 405 137 481 128Z" fill="url(#wine)" stroke="url(#wine)" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M217 248H357Q374 248 380 265L512 588 640 266Q646 248 663 248H805Q831 248 821 273L565 940Q559 958 541 958H483Q465 958 459 940L207 273Q197 248 217 248Z" fill="url(#wine)"/>
+</svg>

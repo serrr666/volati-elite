@@ -1,0 +1,18 @@
+.data-table.resizable-data-table.sizing-ready{table-layout:fixed;min-width:0}
+.resizable-data-table.sizing-ready td{max-width:none}
+.data-table.resizable-data-table th{padding-right:18px}
+.resizable-data-table th>.column-sort{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.resizable-data-table .column-resizer{position:absolute;right:0;top:0;bottom:0;width:10px;z-index:3;cursor:col-resize;touch-action:none;user-select:none}
+.resizable-data-table .column-resizer::after{content:'';position:absolute;top:9px;bottom:9px;right:3px;width:1px;background:var(--border);transition:background .12s,width .12s}
+.resizable-data-table th:hover .column-resizer::after,.resizable-data-table .column-resizer:hover::after,.resizable-data-table .column-resizer:focus-visible::after{background:var(--accent);width:2px}
+.resizable-data-table .column-resizer:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.columns-menu .reset-column-widths{padding:9px 8px;margin-top:5px;border-top:1px solid var(--border);width:100%;text-align:left;font-size:12px;color:var(--text)}
+.columns-menu .reset-column-widths:hover{background:var(--hover)}
+
+/* Keep the source row and process identity visible when reading command tails. */
+.resizable-data-table.sizing-ready td:nth-child(-n+2),.resizable-data-table.sizing-ready th:nth-child(-n+2),.resizable-data-table.sizing-ready.pin-pid td:nth-child(3),.resizable-data-table.sizing-ready.pin-pid th:nth-child(3){position:sticky;background:var(--panel);z-index:2}
+.resizable-data-table.sizing-ready :is(td,th):first-child{left:0}
+.resizable-data-table.sizing-ready :is(td,th):nth-child(2){left:var(--index-left)}
+.resizable-data-table.sizing-ready.pin-pid :is(td,th):nth-child(3){left:var(--pid-left);border-right:1px solid var(--border)}
+.resizable-data-table.sizing-ready th:nth-child(-n+2),.resizable-data-table.sizing-ready.pin-pid th:nth-child(3){background:var(--panel2);z-index:5}
+.resizable-data-table.sizing-ready tbody tr:hover :is(td:nth-child(-n+2),td:nth-child(3)){background:var(--hover)}

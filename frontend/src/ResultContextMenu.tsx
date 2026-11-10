@@ -1,0 +1,11 @@
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {Copy,FileText,TextSelect} from 'lucide-react';
+import {tr} from './i18n';
+export type ContextTarget={x:number;y:number;value:string;selection:string;rowText:string;restore:HTMLElement};
+export function ResultContextMenu({target,close,copy}:{target:ContextTarget;close:()=>void;copy:(s:string)=>void}){
+    const ref=useRef<HTMLDivElement>(null),[position,setPosition]=useState({left:target.x,top:target.y});
+    useLayoutEffect(()=>{const box=ref.current!.getBoundingClientRect();setPosition({left:Math.max(8,Math.min(target.x,innerWidth-box.width-8)),top:Math.max(8,Math.min(target.y,innerHeight-box.height-8))});ref.current!.querySelector('button')?.focus()},[target]);
+    useEffect(()=>{const outside=(e:PointerEvent)=>{if(!ref.current?.contains(e.target as Node))close()};const keys=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();target.restore.isConnected&&target.restore.focus()}else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const buttons=Array.from(ref.current!.querySelectorAll('button'));const i=buttons.indexOf(document.activeElement as HTMLButtonElement);buttons[e.key==='Home'?0:e.key==='End'?buttons.length-1:(i+(e.key==='ArrowDown'?1:buttons.length-1))%buttons.length]?.focus()}else if(e.key==='Tab')close()};document.addEventListener('pointerdown',outside);window.addEventListener('keydown',keys,true);return()=>{document.removeEventListener('pointerdown',outside);window.removeEventListener('keydown',keys,true)}},[target,close]);
+    function choose(text:string){copy(text);close();target.restore.isConnected&&target.restore.focus()}
+    return <div ref={ref} className="result-context-menu" role="menu" aria-label={tr('Копирование результата')} style={position} onContextMenu={e=>e.preventDefault()}><button role="menuitem" onClick={()=>choose(target.value)}><Copy size={15}/>{tr('Скопировать значение')}</button>{target.selection&&<button role="menuitem" onClick={()=>choose(target.selection)}><TextSelect size={15}/>{tr('Скопировать выделенный текст')}</button>}<button role="menuitem" onClick={()=>choose(target.rowText)}><FileText size={15}/>{tr('Скопировать строку (TSV)')}</button></div>;
+}

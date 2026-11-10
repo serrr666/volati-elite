@@ -1,0 +1,32 @@
+:root{--bg:#0f0b0e;--sidebar:#151015;--panel:#1b151b;--panel2:#251c24;--hover:#30222e;--border:#3d2e3a;--border-soft:#2d222b;--text:#f5eef3;--muted:#baadb7;--subtle:#a08d9b;--accent:#ed8ab0;--accent-hover:#f7a1bd;--accent-bg:#351725;--green:#9dd2b8;--green-bg:#1f332b;--blue:#aac3e7;--blue-bg:#242d40;--shadow:0 20px 80px #0009}
+:root[data-theme=light]{--bg:#faf7f9;--sidebar:#fefbfd;--panel:#fff;--panel2:#f4ebf0;--hover:#ecdee7;--border:#e1d2dc;--border-soft:#eadee6;--text:#2b1724;--muted:#665461;--subtle:#75606f;--accent:#98234d;--accent-hover:#7e193f;--accent-bg:#f8e5ed;--green:#296b50;--green-bg:#e5f3eb;--blue:#385f8a;--blue-bg:#eaf0fa;--shadow:0 20px 70px #4c15391a}
+.brand{padding:0 10px;gap:0;align-items:center;height:48px}.brand-word{font-size:23px;letter-spacing:-1px;font-weight:650;white-space:nowrap}.brand-word span{margin-left:5px;font-weight:430}
+.button.primary,:root[data-theme=light] .button.primary{color:#fff;background:#a12a56;border-color:#a12a56;box-shadow:0 2px 8px #4b0c282b}.button.primary:hover:not(:disabled),:root[data-theme=light] .button.primary:hover:not(:disabled){background:#b43c69;border-color:#b43c69}.brand-word,.page-heading h1,.start-heading h1{color:var(--text)}input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px #e879a120}:root[data-theme=light] .command-preview code,:root[data-theme=light] .log-view pre{color:var(--accent)}:root[data-theme=light] .log-view pre.engine-log{color:var(--muted)}.sidebar-tip{background:linear-gradient(135deg,var(--panel),var(--sidebar))}
+.catalog-toolbar{flex-wrap:wrap}.catalog-toolbar .search-input{flex-basis:200px}.catalog-toolbar select{font-size:11px}.catalog-toolbar .plugin-sort{min-width:155px}.training-help-link{display:flex;width:fit-content;line-height:1.7}
+.memory-tabs{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--bg);border:1px solid var(--border);padding:4px;border-radius:9px;margin:18px 0 0}.memory-tabs button{padding:8px 13px;border-radius:6px;font-size:12px;color:var(--muted)}.memory-tabs button.selected{color:var(--accent);background:var(--accent-bg)}.custom-memory{display:block;margin-top:18px;font-size:12px;color:var(--muted)}.custom-memory>div{display:flex;align-items:center;gap:12px;margin-top:9px}.custom-memory input{width:155px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:11px 13px;border-radius:8px;font-size:15px}.custom-memory strong{font-weight:500}.custom-memory small{display:block;line-height:1.7;margin-top:9px;font-size:11px}
+@media(max-width:1000px){.brand-word{font-size:21px}}
+
+.settings-section>.resource-select{display:block;margin-top:14px}
+
+.overview-lower{display:block}.guide-grid{gap:12px}.guide-simple{display:flex;align-items:center;gap:12px;padding:18px;background:var(--panel);border:1px solid var(--border);border-radius:10px;text-align:left;min-width:0}.guide-simple:hover:not(:disabled){background:var(--panel2);border-color:var(--accent)}.guide-simple-icon{width:35px;height:37px;display:grid;place-items:center;border-radius:8px;background:var(--accent-bg);color:var(--accent);flex-shrink:0}.guide-simple>span:nth-child(2){flex:1;min-width:0}.guide-simple strong{display:block;font-size:13px;font-weight:550;line-height:1.5}.guide-simple small{display:block;font-size:11px;line-height:1.75;color:var(--muted);margin-top:5px}.guide-simple>svg{color:var(--subtle)}@media(max-width:1100px){.guide-grid{grid-template-columns:1fr}.guide-simple{min-height:85px}}
+
+.path-picker{display:flex;gap:10px;align-items:center;margin-top:10px}.path-picker input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:7px;font-size:12px}.path-picker>.button{min-height:42px}
+::view-transition-group(root){animation-duration:320ms}::view-transition-old(root){animation:none;z-index:1}::view-transition-new(root){animation:studio-theme-in 320ms cubic-bezier(.22,.61,.36,1) both;mix-blend-mode:normal;z-index:2}@keyframes studio-theme-in{from{opacity:0}to{opacity:1}}
+html.theme-changing,html.theme-changing body,html.theme-changing .app-shell *{transition-property:background-color,color,border-color,box-shadow;transition-duration:280ms;transition-timing-function:cubic-bezier(.22,.61,.36,1)}
+@media(prefers-reduced-motion:reduce){::view-transition-group(root),::view-transition-new(root),::view-transition-old(root){animation:none!important}.theme-changing *{transition:none!important}}
+
+html.theme-snapshot *{transition:none!important}
+
+/* Native option popups must not inherit a transparent select background. */
+select option,select optgroup{background-color:var(--panel);color:var(--text)}
+
+/* Readable evidence metadata, with the same hierarchy in both themes. */
+.case-facts,.run-tab small,.run-tab>span,.catalog-count,.plugin-id,.row-source,.pipeline-caption,.detection-text p{font-size:12px;line-height:1.6}
+.data-table td,.row-details dd{font-size:13px;line-height:1.55}
+.address-note{font-size:12px;line-height:1.6;color:var(--muted);margin:16px 0}
+.detection-card .icon-button{flex-shrink:0}
+
+.data-table th{font-size:12px}
+
+/* Case lists stay within the window; worker details remain readable in both themes. */
+.case-menu{max-height:min(65vh,600px);overflow-y:auto;overscroll-behavior:contain}.command-preview>small{display:block;color:var(--muted);line-height:1.6;margin-top:9px;font-size:11px}.worker-command{margin:16px 0;color:var(--muted)}.worker-command>summary{cursor:pointer;color:var(--text);font-size:12px}.worker-command .log-label{margin-top:12px}
