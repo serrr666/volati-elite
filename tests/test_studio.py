@@ -478,12 +478,16 @@ def test_initial_language_uses_configured_os_locale(monkeypatch,languages,expect
 
 
 def test_language_and_theme_preferences_survive_engine_settings(client):
-    assert client.put('/api/preferences',json={'language':'en','theme':'light','last_case':'demo','hide_tip':False}).status_code==200
+    preferences = {
+        'language': 'en', 'theme': 'light', 'last_case': 'demo', 'hide_tip': False,
+        'hidden_recent_cases': ['demo'], 'favorite_plugins': ['windows.filescan.FileScan'],
+    }
+    assert client.put('/api/preferences', json=preferences).status_code == 200
     cfg=client.get('/api/settings').json()
     cfg['memory_limit_mb']=1024
     assert client.put('/api/settings',json=cfg).status_code==200
     pref=client.get('/api/preferences').json()
-    assert pref=={'language':'en','theme':'light','last_case':'demo','hide_tip':False,'open_cases':['demo']}
+    assert pref == {**preferences, 'open_cases': ['demo']}
     assert client.put('/api/preferences',json={'language':'broken','theme':'dark'}).status_code==422
     assert client.put('/api/preferences',json={'language':'en','theme':'light','last_case':'demo','hide_tip':True}).status_code==200
     assert client.get('/api/preferences').json()['hide_tip'] is True

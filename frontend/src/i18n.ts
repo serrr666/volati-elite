@@ -734,3 +734,25 @@ Object.assign(en,{"Выбрано: {0}": "Selected: {0}", "Исключено: {
 Object.assign(en,{"Блокнот расследования": "Investigation notebook", "Закрыть блокнот": "Close notebook", "Текст расследования": "Investigation notes", "Копировать заметки": "Copy notes", "Экспорт заметок TXT": "Export notes as TXT", "План, гипотезы, команды, находки и выводы…": "Plan, hypotheses, commands, findings and conclusions…", "Сохраняем заметки…": "Saving notes…", "Не удалось сохранить заметки": "Could not save notes", "Блокнот справа сверху доступен на любом экране. Заметки кейса и общие заметки сохраняются автоматически; Ctrl+S сохраняет сразу. Можно копировать текст и экспортировать TXT.": "The notebook at the top right is available on every screen. Case and workspace notes save automatically; Ctrl+S saves immediately. Copy text or export TXT."});
 
 Object.assign(en,{"Версия приложения":"App version"});
+
+Object.assign(en, {
+    "Избранные плагины": "Favorite plugins",
+    "Добавить {0} в избранное": "Add {0} to favorites",
+    "Убрать {0} из избранного": "Remove {0} from favorites",
+    "Нажмите звёздочку рядом с нужным плагином.": "Click the star next to a plugin to save it.",
+    "Скрыть убранные образы": "Hide removed images",
+    "Показать убранные образы ({0})": "Show removed images ({0})",
+    "Вернуть {0} в недавние": "Restore {0} to recent images",
+    "Убрать {0} из недавних": "Remove {0} from recent images",
+    "Нет образов в списке": "No images to show",
+    "Не удалось вычислить хеши": "Could not calculate hashes",
+    "Вычисляем MD5 и SHA-256…": "Calculating MD5 and SHA-256…",
+    "Скопировать хеш {0}": "Copy {0} hash",
+    "Тип адреса {0} не определён. Проверьте Info или выберите тип вручную.": "Could not determine the address type for {0}. Check Info or choose it manually.",
+    "Физический адрес": "Physical address",
+    "Виртуальный адрес": "Virtual address",
+    "Открыть файл в DumpFiles": "Open file in DumpFiles",
+    "В Volatility {0} плагин {1} не поддерживает структуры conhost для Windows {2}.": "In Volatility {0}, {1} does not support the conhost structures for Windows {2}.",
+    "Для истории консоли нужен анализатор с поддержкой этой сборки. CmdLine показывает аргументы запуска процессов.": "Console history requires an analyzer that supports this build. CmdLine shows process launch arguments.",
+    "Открыть CmdLine": "Open CmdLine"
+});

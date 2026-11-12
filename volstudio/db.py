@@ -8,6 +8,7 @@ import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from .diagnostics import unsupported_console_build
 from .localization import default_language,default_theme
 
 DATA = Path(os.environ.get("VOLSTUDIO_DATA", Path(__file__).resolve().parent.parent / "data")).resolve()
@@ -159,4 +160,5 @@ def save_settings(values):
 def serialize_run(r):
     return {**r, "params": json.loads(r["params"]), "columns": json.loads(r["columns_json"]),
             "offline": bool(r["offline"]), "settings": json.loads(r["settings_json"]),
+            "unsupported_console_build": unsupported_console_build(r['plugin'], r.get('error')) if r['status']=='failed' else None,
             "pipeline_summary": json.loads(r.get("pipeline_summary_json") or '{}')}

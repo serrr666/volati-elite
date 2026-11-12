@@ -6,7 +6,7 @@ Volati Elite is a Windows desktop interface for [Volatility 3](https://github.co
 
 ## Download
 
-[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.9-test.1)
+[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.10-test.1)
 
 Download `VolatiElite.exe` from the pre-release assets and run it.
 
@@ -18,7 +18,7 @@ Download `VolatiElite.exe` from the pre-release assets and run it.
 4. Filter the results, bookmark useful rows and write down your findings in the investigation notebook.
 5. Export the relevant results as CSV or JSON, or save your notes as TXT.
 
-The original image is read from its existing location. Case data, results, caches and notes are stored locally. The profile folder remains `%LOCALAPPDATA%\VolatiElite` for compatibility with earlier test builds.
+The original image is read from its existing location. Case data, results, caches and notes are stored locally. The profile folder remains `%LOCALAPPDATA%\Vol3Studio` for compatibility with earlier test builds.
 
 ## What is included
 

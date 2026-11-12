@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from . import __version__, catalog, db, runner
+from .artifact_hashes import ArtifactChanged, artifact_digests
 from .pipeline import PipelineInput
 from . import result_filters
 from .security import API_TOKEN,TOKEN_HEADER,authenticated
@@ -127,6 +128,8 @@ class PreferencesInput(BaseModel):
     last_case: str = ""
     hide_tip: bool = False
     open_cases: list[str] | None = Field(default=None,max_length=1000)
+    hidden_recent_cases: list[str] = Field(default_factory=list, max_length=1000)
+    favorite_plugins: list[str] = Field(default_factory=list, max_length=1000)
 
 
 @app.get("/api/preferences")
@@ -137,7 +140,9 @@ def preferences():
     opened=cfg.get('open_cases')
     if opened is None:opened=[last] if last in ids else []
     opened=list(dict.fromkeys(cid for cid in opened if cid in ids))
-    return {"language":cfg.get("language") if cfg.get("language") in SUPPORTED_LANGUAGES else default_language(),"theme":cfg.get("theme",default_theme()),"last_case":last if last in opened else '',"hide_tip":cfg.get("hide_tip",False),'open_cases':opened}
+    return {"language":cfg.get("language") if cfg.get("language") in SUPPORTED_LANGUAGES else default_language(),"theme":cfg.get("theme",default_theme()),"last_case":last if last in opened else '',"hide_tip":cfg.get("hide_tip",False),'open_cases':opened,
+            'hidden_recent_cases': list(dict.fromkeys(cid for cid in cfg.get('hidden_recent_cases', []) if cid in ids)),
+            'favorite_plugins': cfg.get('favorite_plugins', [])}
 
 
 @app.put("/api/preferences")
@@ -153,6 +158,12 @@ def save_preferences(value: PreferencesInput):
     ids={r['id'] for r in db.all_rows('SELECT id FROM cases')}
     if len(opened)!=len(set(opened)) or any(cid not in ids for cid in opened) or (last and last not in opened):
         raise HTTPException(422,'Invalid workspace case selection')
+    if 'hidden_recent_cases' in changes:
+        changes['hidden_recent_cases'] = list(dict.fromkeys(cid for cid in value.hidden_recent_cases if cid in ids))
+    if 'favorite_plugins' in changes:
+        if any(not plugin or len(plugin)>256 for plugin in value.favorite_plugins):
+            raise HTTPException(422, 'Invalid favorite plugin identifier')
+        changes['favorite_plugins'] = list(dict.fromkeys(value.favorite_plugins))
     changes.update(open_cases=opened,last_case=last)
     db.save_settings(changes)
     return preferences()
@@ -507,6 +518,38 @@ def result_row(run_id: str, row_idx: int):
     return {'index':row['idx'],'depth':row['depth'],'data':json.loads(row['data'])}
 
 
+@app.get('/api/runs/{run_id}/rows/{row_idx}/dumpfiles')
+def filescan_target(run_id: str, row_idx: int):
+    run = run_or_404(run_id)
+    if run['plugin'] != 'windows.filescan.FileScan' or run['status'] != 'completed':
+        raise HTTPException(409, 'A completed FileScan result is required')
+    data = result_row(run_id, row_idx)['data']
+    address = str(data.get('Offset', ''))
+    if not re.fullmatch(r'0[xX][0-9a-fA-F]{1,16}|[0-9]{1,20}', address):
+        raise HTTPException(422, 'FileScan row has no usable address')
+    number = int(address, 16 if address.lower().startswith('0x') else 10)
+    if not 0 < number < 2**64:
+        raise HTTPException(422, 'FileScan row has no usable address')
+
+    # PoolScanner scans the underlying physical layer before Windows 10.
+    # Use Info from the same verified input, never infer the kind from the offset.
+    parameter = None
+    if run['input_sha256']:
+        info = db.one("""SELECT id FROM runs WHERE case_id=? AND input_sha256=?
+            AND plugin='windows.info.Info' AND status='completed' ORDER BY created DESC LIMIT 1""",
+            (run['case_id'], run['input_sha256']))
+        if info:
+            major = db.one("""SELECT json_extract(data,'$.Value') value FROM result_rows
+                WHERE run_id=? AND json_extract(data,'$.Variable')='NtMajorVersion' LIMIT 1""", (info['id'],))
+            if major and re.fullmatch(r'[0-9]{1,3}', str(major['value'])):
+                version = int(major['value'])
+                if version in (5, 6):
+                    parameter = 'physaddr'
+                elif version >= 10:
+                    parameter = 'virtaddr'
+    return {'address': hex(number), 'parameter': parameter}
+
+
 @app.get("/api/runs/{run_id}/logs")
 def logs(run_id: str):
     run = run_or_404(run_id)
@@ -541,8 +584,7 @@ def artifacts(run_id: str):
             if p.is_file() and root in p.resolve().parents and p.name.rstrip(' .').casefold() not in INTERNAL_RUN_FILES]
 
 
-@app.get("/api/runs/{run_id}/artifact")
-def artifact(run_id: str, name: str):
+def artifact_path(run_id: str, name: str) -> Path:
     run = run_or_404(run_id)
     if run['status']!='completed':
         raise HTTPException(409,'Artifacts are available only after a successful run')
@@ -557,7 +599,24 @@ def artifact(run_id: str, name: str):
         raise HTTPException(404,'Artifact not found')
     if root not in target.parents or not target.is_file() or target.name.rstrip(' .').casefold() in INTERNAL_RUN_FILES:
         raise HTTPException(404, "Artifact not found")
+    return target
+
+
+@app.get("/api/runs/{run_id}/artifact")
+def artifact(run_id: str, name: str):
+    target = artifact_path(run_id, name)
     return FileResponse(target, filename=target.name, media_type="application/octet-stream")
+
+
+@app.get("/api/runs/{run_id}/artifact-hashes")
+def artifact_hashes(run_id: str, name: str):
+    target = artifact_path(run_id, name)
+    try:
+        return artifact_digests(target)
+    except ArtifactChanged:
+        raise HTTPException(409, 'Extracted file changed during hashing') from None
+    except OSError:
+        raise HTTPException(404, 'Extracted file could not be read') from None
 
 
 def csv_safe(value):
