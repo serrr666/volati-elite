@@ -24,6 +24,7 @@ reports/
 playwright-report/
 test-results/
 release/
+legacy-volatility2/
 build/
 *.egg-info/
 

@@ -19,6 +19,9 @@ def main():
     if len(sys.argv)>1 and sys.argv[1]=="--engine-worker":
         from .engine_worker import run
         return run(sys.argv[2])
+    if len(sys.argv)>1 and sys.argv[1]=="--legacy-worker":
+        from .legacy_worker import run
+        return run(sys.argv[2])
     if len(sys.argv)>1 and sys.argv[1]=="--catalog":
         from .catalog import discover
         try:

@@ -16,6 +16,7 @@ os.environ['PATH']=os.pathsep.join([
 datas=[(str(root/'frontend'/'dist'),'frontend/dist'),(str(root/'assets'),'assets'),(str(root/'frontend'/'src'/'locales'),'locale-data')]
 datas+=collect_data_files('volatility3',include_py_files=True)
 datas+=copy_metadata('volatility3')
+datas.append((str(root/'volstudio'/'legacy_bridge.py'),'volstudio'))
 for name in ('LICENSE','THIRD_PARTY_NOTICES.md'):
     if (root/name).exists():
         datas.append((str(root/name),'.'))
@@ -23,7 +24,7 @@ hidden=collect_submodules('volatility3')+[
     'uvicorn.logging','uvicorn.loops.asyncio','uvicorn.protocols.http.h11_impl',
     'uvicorn.protocols.websockets.websockets_impl','uvicorn.lifespan.on',
     'yara','capstone','Crypto.Cipher.AES','Crypto.Cipher.ARC4','Crypto.Cipher.DES','Crypto.Cipher.DES3',
-    'ijson.backends.yajl2_c','volstudio.app','volstudio.catalog','volstudio.engine_worker','volstudio.pipeline',
+    'ijson.backends.yajl2_c','volstudio.app','volstudio.catalog','volstudio.engine_worker','volstudio.legacy_worker','volstudio.pipeline',
 ]
 a=Analysis([str(root/'desktop_entry.py')],pathex=[str(root)],binaries=[],datas=datas,hiddenimports=hidden,
            hookspath=[],runtime_hooks=[],excludes=['pytest','IPython','matplotlib','numpy','pandas','tkinter'],noarchive=False)

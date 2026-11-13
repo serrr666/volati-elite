@@ -756,3 +756,13 @@ Object.assign(en, {
     "Для истории консоли нужен анализатор с поддержкой этой сборки. CmdLine показывает аргументы запуска процессов.": "Console history requires an analyzer that supports this build. CmdLine shows process launch arguments.",
     "Открыть CmdLine": "Open CmdLine"
 });
+
+Object.assign(en, {
+    "Поиск по наблюдениям": "Search observations",
+    "Поиск в блокноте": "Find in notebook",
+    "Предыдущее совпадение": "Previous match",
+    "Следующее совпадение": "Next match",
+    "Запустить через Volatility 2": "Run with Volatility 2",
+    "Для запуска нужен компонент Volatility 2 рядом с приложением.": "Place the Volatility 2 component next to the application to use it here.",
+    "Профиль Volatility 2": "Volatility 2 profile"
+});

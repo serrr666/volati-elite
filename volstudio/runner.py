@@ -15,7 +15,7 @@ from pathlib import Path
 import ijson
 import psutil
 
-from . import __version__, catalog, db, demo
+from . import __version__, catalog, db, demo, legacy
 from .evidence import read_guard
 
 PROCESSES = {}
@@ -161,6 +161,7 @@ def friendly_error(stderr, case_os=None):
 def execute(run):
     case = db.one("SELECT * FROM cases WHERE id=?", (run["case_id"],))
     pipeline = run.get("purpose") == "pipeline"
+    legacy_profile = run.get('legacy_profile')
     params = json.loads(run["params"])
     verify_image = case["kind"] != "demo" and (not pipeline or params["source"] == "image")
     outdir = db.DATA / "cases" / case["id"] / "runs" / run["id"]
@@ -177,15 +178,27 @@ def execute(run):
             s = Path(case["path"]).stat()
             if (s.st_size, s.st_mtime_ns) != (case["size"], case["mtime_ns"]):
                 raise ValueError("Evidence changed since hashing. Attach a fresh case before analysis.")
-        if not pipeline and case['kind'] != 'demo':
+        if legacy_profile and run['input_sha256'] != case['sha256']:
+            raise ValueError('Evidence changed since the Volatility 2 run was queued')
+        if not pipeline and not legacy_profile and case['kind'] != 'demo':
             from .symbol_store import prepare
             db.update_run(run['id'],started=db.now(),status='running',message='Preparing OS analysis data')
             cfg = {**cfg,'symbol_dirs':prepare(cfg.get('symbol_dirs',[]),
                 lambda message: db.update_run(run['id'],message=message),
                 lambda: db.one('SELECT status FROM runs WHERE id=?',(run['id'],))['status']=='cancelled')}
-        cmd = command_for(case, run["plugin"], params, outdir, cfg) if not pipeline else ["studio-pipeline", json.dumps(params)]
-        equivalent = ['vol',*cmd[4:]] if not pipeline else cmd
-        if not pipeline:
+        if legacy_profile:
+            legacy_runtime = legacy.runtime()
+            if legacy_runtime is None:
+                raise RuntimeError('Volatility 2 component is unavailable')
+            python, entry = legacy_runtime
+            cmd = []
+            equivalent = [str(python), str(entry), '-f', case['path'], '--profile=' + legacy_profile,
+                          '--output=json', legacy.PLUGINS[run['plugin']]]
+        elif pipeline:
+            cmd = equivalent = ["studio-pipeline", json.dumps(params)]
+        else:
+            cmd = command_for(case, run['plugin'], params, outdir, cfg)
+            equivalent = ['vol', *cmd[4:]]
             equivalent[equivalent.index('studio-jsonl')]='json'
         with PROCESS_LOCK:
             if db.one("SELECT status FROM runs WHERE id=?", (run["id"],))["status"] == "cancelled":
@@ -210,9 +223,13 @@ def execute(run):
             job = {"stdout":str(result_path), "stderr":str(log_path), "args":cmd[4:]}
             if pipeline:
                 job.update(config=params, image=case["path"], database=str(db.DATA/"studio.sqlite3"), summary=str(outdir/"pipeline-summary.json"))
+            if legacy_profile:
+                job.update(image=case['path'], plugin=run['plugin'], profile=legacy_profile)
             job_path.write_text(json.dumps(job),encoding="utf-8")
             mode = "--pipeline-worker" if pipeline else "--engine-worker"
             module = "volstudio.pipeline" if pipeline else "volstudio.engine_worker"
+            if legacy_profile:
+                mode, module = '--legacy-worker', 'volstudio.legacy_worker'
             worker_cmd = [sys.executable,mode,str(job_path)] if getattr(sys,"frozen",False) else [sys.executable,"-u","-m",module,str(job_path)]
             ram=psutil.virtual_memory()
             budget_mb=int(cfg.get("memory_limit_mb",0)) or max(512,int(min(ram.total*.45,ram.available*.7)/(1024**2)))

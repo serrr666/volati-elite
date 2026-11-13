@@ -110,7 +110,7 @@ def init():
         """)
         for table, additions in {
             "cases": {"source_kind": "TEXT DEFAULT 'memory'", "detect_status": "TEXT DEFAULT 'manual'", "detected_banner": "TEXT DEFAULT ''", "image_format": "TEXT DEFAULT ''", "detect_message": "TEXT DEFAULT ''", "hash_progress": "REAL DEFAULT 0", "hash_error": "TEXT DEFAULT ''"},
-            "runs": {"purpose": "TEXT DEFAULT 'analysis'", "memory_peak_bytes": "INTEGER DEFAULT 0", "memory_budget_mb": "INTEGER DEFAULT 0", "pipeline_summary_json": "TEXT DEFAULT '{}'", "worker_command": "TEXT DEFAULT ''", "studio_version": "TEXT DEFAULT ''", "studio_sha256": "TEXT DEFAULT ''"},
+            "runs": {"purpose": "TEXT DEFAULT 'analysis'", "memory_peak_bytes": "INTEGER DEFAULT 0", "memory_budget_mb": "INTEGER DEFAULT 0", "pipeline_summary_json": "TEXT DEFAULT '{}'", "worker_command": "TEXT DEFAULT ''", "studio_version": "TEXT DEFAULT ''", "studio_sha256": "TEXT DEFAULT ''", "legacy_profile": "TEXT", "legacy_source_run": "TEXT"},
         }.items():
             existing = {row[1] for row in c.execute(f"PRAGMA table_info({table})")}
             for name, definition in additions.items():
@@ -160,5 +160,5 @@ def save_settings(values):
 def serialize_run(r):
     return {**r, "params": json.loads(r["params"]), "columns": json.loads(r["columns_json"]),
             "offline": bool(r["offline"]), "settings": json.loads(r["settings_json"]),
-            "unsupported_console_build": unsupported_console_build(r['plugin'], r.get('error')) if r['status']=='failed' else None,
+            "unsupported_console_build": unsupported_console_build(r['plugin'], r.get('error')) if r['status']=='failed' and not r.get('legacy_profile') else None,
             "pipeline_summary": json.loads(r.get("pipeline_summary_json") or '{}')}

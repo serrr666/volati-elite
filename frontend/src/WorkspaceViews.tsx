@@ -6,7 +6,7 @@ import {NotebookEditor} from './NotebookEditor';
 import type {Case,Run,View} from './types';
 
 export type WorkspaceRun=Run&{case_name:string};
-export type WorkspaceActivity={runs:WorkspaceRun[];active:WorkspaceRun[];total_runs:number};
+export type WorkspaceActivity={runs:WorkspaceRun[];active:WorkspaceRun[];total_runs:number;completed_runs:number};
 export type OpenSaved=(id:string,view?:View,runId?:string)=>void;
 export function SavedCases({cases, openCase, observations = false, hidden = [], toggleHidden}: {
     cases: Case[];

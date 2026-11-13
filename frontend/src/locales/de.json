@@ -742,5 +742,12 @@
   "Open file in DumpFiles": "Datei in DumpFiles öffnen",
   "In Volatility {0}, {1} does not support the conhost structures for Windows {2}.": "In Volatility {0} unterstützt {1} die conhost-Strukturen von Windows {2} nicht.",
   "Console history requires an analyzer that supports this build. CmdLine shows process launch arguments.": "Für den Konsolenverlauf ist ein Analysewerkzeug mit Unterstützung für diesen Build erforderlich. CmdLine zeigt die Startargumente der Prozesse.",
-  "Open CmdLine": "CmdLine öffnen"
+  "Open CmdLine": "CmdLine öffnen",
+  "Search observations": "Beobachtungen suchen",
+  "Find in notebook": "Im Notizbuch suchen",
+  "Previous match": "Vorheriger Treffer",
+  "Next match": "Nächster Treffer",
+  "Run with Volatility 2": "Mit Volatility 2 ausführen",
+  "Place the Volatility 2 component next to the application to use it here.": "Legen Sie die Volatility-2-Komponente neben der Anwendung ab.",
+  "Volatility 2 profile": "Volatility-2-Profil"
 }

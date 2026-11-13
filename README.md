@@ -6,9 +6,11 @@ Volati Elite is a Windows desktop interface for [Volatility 3](https://github.co
 
 ## Download
 
-[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.10-test.1)
+[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.11-test.1)
 
 Download `VolatiElite.exe` from the pre-release assets and run it.
+
+For optional Volatility 2 support, extract `legacy-volatility2.zip` next to the EXE. The extracted `legacy-volatility2` folder must sit directly beside `VolatiElite.exe`. After a supported failure in Volatility 3, `Consoles` and `CmdScan` can be retried through Volatility 2 on verified Windows 7 SP0 x86 images with default options.
 
 ## Quick start
 

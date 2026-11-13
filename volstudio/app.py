@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
-from . import __version__, catalog, db, runner
+from . import __version__, catalog, db, legacy, runner
 from .artifact_hashes import ArtifactChanged, artifact_digests
 from .pipeline import PipelineInput
 from . import result_filters
@@ -202,6 +202,7 @@ def workspace_activity():
     query='SELECT r.*,c.name AS case_name FROM runs r JOIN cases c ON c.id=r.case_id '
     return {'runs':[db.serialize_run(r) for r in db.all_rows(query+'ORDER BY r.created DESC,r.id DESC LIMIT 100')],
             'active':[db.serialize_run(r) for r in db.all_rows(query+"WHERE r.status IN ('queued','running','indexing') ORDER BY r.created,r.id")],
+            'completed_runs':db.one("SELECT COUNT(*) n FROM runs WHERE status='completed'")['n'],
             'total_runs':db.one('SELECT COUNT(*) n FROM runs')['n']}
 
 
@@ -217,7 +218,8 @@ def health():
     from .build_info import BUILD_DATE
     return {"app": "volati elite", "version": __version__, "build_date":BUILD_DATE, "engine_version": catalog.CATALOG["version"],
             "engine_status": catalog.CATALOG["status"], "plugin_count": len(catalog.CATALOG["plugins"]),
-            "warnings": catalog.CATALOG["warnings"], "data_dir": str(db.DATA), "local_only": True}
+            "warnings": catalog.CATALOG["warnings"], "data_dir": str(db.DATA), "local_only": True,
+            "legacy_available": legacy.runtime() is not None}
 
 
 @app.get("/api/plugins")
@@ -435,8 +437,14 @@ def save_note_draft(case_id: str, value: NoteDraftInput):
 
 @app.get("/api/cases/{case_id}/runs")
 def runs(case_id: str):
-    case_or_404(case_id)
-    return [db.serialize_run(r) for r in db.all_rows("SELECT * FROM runs WHERE case_id=? ORDER BY created DESC", (case_id,))]
+    case = case_or_404(case_id)
+    serialized = []
+    for run in db.all_rows("SELECT * FROM runs WHERE case_id=? ORDER BY created DESC", (case_id,)):
+        result = db.serialize_run(run)
+        if result['unsupported_console_build'] == '6.1.7600':
+            result['legacy_console_profile'] = legacy.supported_profile(case, run)
+        serialized.append(result)
+    return serialized
 
 
 @app.post("/api/cases/{case_id}/pipeline", status_code=201)
@@ -485,9 +493,29 @@ def cancel_run(run_id: str):
 @app.post("/api/runs/{run_id}/retry", status_code=201)
 def retry(run_id: str):
     run = run_or_404(run_id)
+    if run.get('legacy_source_run'):
+        return enqueue_legacy(run['legacy_source_run'])
     if run.get("purpose") == "pipeline":
         return enqueue_pipeline(run["case_id"], PipelineInput.model_validate_json(run["params"]))
     return enqueue(run["case_id"], RunInput(plugin=run["plugin"], params=json.loads(run["params"])))
+
+
+@app.post('/api/runs/{run_id}/legacy', status_code=201)
+def enqueue_legacy(run_id: str):
+    source = run_or_404(run_id)
+    case = case_or_404(source['case_id'])
+    profile = legacy.supported_profile(case, source)
+    if not profile:
+        raise HTTPException(409, 'A supported Windows 7 x86 profile and a matching Volatility 3 failure are required')
+    if legacy.runtime() is None:
+        raise HTTPException(409, 'Volatility 2 component is unavailable')
+    run_id_new = uuid.uuid4().hex[:16]
+    db.execute("""INSERT INTO runs(id,case_id,plugin,params,status,created,engine_version,offline,settings_json,
+        input_sha256,legacy_profile,legacy_source_run) VALUES(?,?,?,?,'queued',?,?,1,?,?,?,?)""",
+        (run_id_new, case['id'], source['plugin'], source['params'], db.now(), legacy.VERSION,
+         json.dumps(db.settings()), case['sha256'], profile, run_id))
+    runner.WAKE.set()
+    return db.serialize_run(run_or_404(run_id_new))
 
 
 @app.get('/api/runs/{run_id}/values')
@@ -571,7 +599,13 @@ def logs(run_id: str):
             "worker_command":runner.powershell_command(worker_arguments) if worker_arguments else ''}
 
 
-INTERNAL_RUN_FILES={'result.json','result.jsonl','engine.log','worker-job.json','pipeline-distinct.sqlite3','pipeline-summary.json'}
+INTERNAL_RUN_FILES={'result.json','result.jsonl','engine.log','worker-job.json','pipeline-distinct.sqlite3','pipeline-summary.json',
+                    'legacy-result.part','legacy.conf','legacy-cache'}
+
+
+def public_artifact(root: Path, target: Path) -> bool:
+    return (root in target.parents and target.is_file() and
+            not any(part.rstrip(' .').casefold() in INTERNAL_RUN_FILES for part in target.relative_to(root).parts))
 
 
 @app.get("/api/runs/{run_id}/artifacts")
@@ -581,7 +615,7 @@ def artifacts(run_id: str):
         return []
     root = Path(run["output_dir"]).resolve()
     return [{"name": str(p.relative_to(root)), "size": p.stat().st_size} for p in root.rglob("*")
-            if p.is_file() and root in p.resolve().parents and p.name.rstrip(' .').casefold() not in INTERNAL_RUN_FILES]
+            if p.is_file() and public_artifact(root, p.resolve()) and public_artifact(root, p)]
 
 
 def artifact_path(run_id: str, name: str) -> Path:
@@ -597,7 +631,7 @@ def artifact_path(run_id: str, name: str) -> Path:
         target = (root / name).resolve()
     except (ValueError,OSError):
         raise HTTPException(404,'Artifact not found')
-    if root not in target.parents or not target.is_file() or target.name.rstrip(' .').casefold() in INTERNAL_RUN_FILES:
+    if not public_artifact(root, target):
         raise HTTPException(404, "Artifact not found")
     return target
 

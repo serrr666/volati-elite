@@ -1,5 +1,5 @@
-import {useCallback,useEffect,useRef,useState,useSyncExternalStore} from 'react';
-import {Check,Copy,Download,FilePenLine,Loader2,X} from 'lucide-react';
+import {useCallback,useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
+import {Check,ChevronDown,ChevronUp,Copy,Download,FilePenLine,Loader2,Search,X} from 'lucide-react';
 import {api} from './api';
 import {tr} from './i18n';
 import {NotebookStore,type NotebookValue} from './notebookStore';
@@ -13,11 +13,22 @@ export function NotebookEditor({scope,title,focus=false}:{scope:string;title:str
     const snapshot=useCallback(()=>investigationNotes.snapshot(scope),[scope]);
     const state=useSyncExternalStore(subscribe,snapshot),input=useRef<HTMLTextAreaElement>(null),focused=useRef(false);
     const [message,setMessage]=useState('');
+    const [searchOpen,setSearchOpen]=useState(false),[query,setQuery]=useState(''),[matchIndex,setMatchIndex]=useState(-1);
+    const matches=useMemo(()=>query ? Array.from(state.text.matchAll(new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'giu'))) : [],[query,state.text]);
+    function stepMatch(direction:number){
+        if(!matches.length)return;
+        const next=matchIndex<0?(direction===1?0:matches.length-1):(matchIndex+direction+matches.length)%matches.length;
+        const match=matches[next];
+        setMatchIndex(next);
+        input.current?.focus();
+        input.current?.setSelectionRange(match.index,match.index+match[0].length);
+    }
     useEffect(()=>{void investigationNotes.load(scope).catch(()=>{});return()=>{void investigationNotes.flush(scope).catch(()=>{})}},[scope]);
     useEffect(()=>{if(focus&&state.loaded&&!focused.current){input.current?.focus();focused.current=true}},[focus,state.loaded]);
     async function copy(){try{await navigator.clipboard.writeText(state.text);setMessage(tr('Скопировано'))}catch(e){setMessage(String(e))}}
     function download(){const url=URL.createObjectURL(new Blob([state.text],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=(title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,110)||'investigation')+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-    return <section className="investigation-editor"><div className="notebook-editor-heading"><strong title={title}>{title}</strong><div><button className="icon-button" disabled={!state.loaded} title={tr('Копировать заметки')} aria-label={tr('Копировать заметки')} onClick={copy}><Copy size={15}/></button><button className="icon-button" disabled={!state.loaded} title={tr('Экспорт заметок TXT')} aria-label={tr('Экспорт заметок TXT')} onClick={download}><Download size={15}/></button></div></div>
+    return <section className="investigation-editor"><div className="notebook-editor-heading"><strong title={title}>{title}</strong><div><button className="icon-button" disabled={!state.loaded} title={tr('Поиск в блокноте')} aria-label={tr('Поиск в блокноте')} aria-expanded={searchOpen} onClick={()=>setSearchOpen(value=>!value)}><Search size={15}/></button><button className="icon-button" disabled={!state.loaded} title={tr('Копировать заметки')} aria-label={tr('Копировать заметки')} onClick={copy}><Copy size={15}/></button><button className="icon-button" disabled={!state.loaded} title={tr('Экспорт заметок TXT')} aria-label={tr('Экспорт заметок TXT')} onClick={download}><Download size={15}/></button></div></div>
+    {searchOpen&&<div className="notebook-find"><label className="search-input"><Search size={14}/><input autoFocus value={query} maxLength={160} aria-label={tr('Поиск в блокноте')} placeholder={tr('Поиск в блокноте')} onChange={e=>{setQuery(e.target.value);setMatchIndex(-1)}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();stepMatch(e.shiftKey?-1:1)}if(e.key==='Escape'){e.preventDefault();setSearchOpen(false)}}}/></label><small aria-live="polite">{query?(matches.length?`${Math.max(0,Math.min(matchIndex+1,matches.length))} / ${matches.length}`:tr('Ничего не найдено')):''}</small><button className="icon-button" disabled={!matches.length} title={tr('Предыдущее совпадение')} aria-label={tr('Предыдущее совпадение')} onClick={()=>stepMatch(-1)}><ChevronUp size={15}/></button><button className="icon-button" disabled={!matches.length} title={tr('Следующее совпадение')} aria-label={tr('Следующее совпадение')} onClick={()=>stepMatch(1)}><ChevronDown size={15}/></button></div>}
     <textarea ref={input} aria-label={tr('Текст расследования')} disabled={!state.loaded} maxLength={100000} spellCheck={false} value={state.text} placeholder={tr('План, гипотезы, команды, находки и выводы…')} onChange={e=>{setMessage('');investigationNotes.edit(scope,e.target.value)}} onBlur={()=>{void investigationNotes.flush(scope).catch(()=>{})}} onKeyDown={e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();e.stopPropagation();void investigationNotes.flush(scope).catch(()=>{})}}}/>
     <div className="notebook-editor-status"><span role="status">{state.status==='loading'?tr('Загрузка…'):state.status==='error'?tr(state.loaded?'Не удалось сохранить заметки':'Не удалось загрузить заметки'):state.status==='ready'?<><Check size={13}/>{tr('Все изменения сохранены')}</>:<><Loader2 size={13} className="spin"/>{tr('Сохраняем заметки…')}</>}</span><small>{state.text.length.toLocaleString()} / 100 000</small></div>
     {state.status==='error'&&<div role="alert" className="notebook-error"><p>{state.error}</p><button className="button secondary" onClick={()=>{void (state.loaded?investigationNotes.flush(scope):investigationNotes.load(scope)).catch(()=>{})}}>{tr('Повторить')}</button></div>}{message&&<small role="status">{message}</small>}</section>;
