@@ -19,9 +19,6 @@ def main():
     if len(sys.argv)>1 and sys.argv[1]=="--engine-worker":
         from .engine_worker import run
         return run(sys.argv[2])
-    if len(sys.argv)>1 and sys.argv[1]=="--legacy-worker":
-        from .legacy_worker import run
-        return run(sys.argv[2])
     if len(sys.argv)>1 and sys.argv[1]=="--catalog":
         from .catalog import discover
         try:
@@ -220,6 +217,7 @@ def main():
             self.page.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls,False)
             self.page.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls,False)
             self.page.settings().setAttribute(QWebEngineSettings.WebAttribute.AllowRunningInsecureContent,False)
+            self.page.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard,True)
             self.view.setPage(self.page)
             self.channel=QWebChannel(self.page)
             self.bridge=Bridge(self)

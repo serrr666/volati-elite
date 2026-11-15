@@ -156,7 +156,7 @@
   "Create pipeline": "创建流水线",
   "Custom budget": "自定义上限",
   "Custom memory budget in GB": "自定义内存上限（GB）",
-  "DWARF text · Volatility 2 profile data": "DWARF 文本 · Volatility 2 配置数据",
+  "DWARF text · type definitions": "DWARF 文本 · 类型定义",
   "Dark": "深色",
   "Dark theme": "深色主题",
   "Data source": "数据来源",
@@ -556,7 +556,7 @@
   "These notes are stored separately from cases and are excluded from case reports.": "这些备注独立于案件保存，不包含在案件报告中。",
   "This folder may contain extracted data and sensitive information from images. Review its contents before sharing it.": "此文件夹可能包含从镜像中提取的数据和敏感信息。分享前请检查内容。",
   "This is VMware snapshot inventory metadata, not RAM. Open the corresponding VMSS/VMEM/VMSN; metadata string search is available.": "这是 VMware 快照清单元数据，不是内存内容。请打开对应的 VMSS/VMEM/VMSN；可在元数据中搜索字符串。",
-  "This is a Volatility 2 text type description, not a memory image. String search is available; Volatility 3 Linux analysis requires a RAM image and matching ISF JSON.": "这是 Volatility 2 的文本类型描述，不是内存镜像。可搜索字符串；Volatility 3 的 Linux 分析需要内存镜像和匹配的 ISF JSON。",
+  "This file contains DWARF type definitions. String search is available. Linux analysis requires a RAM image and matching ISF JSON.": "此文件包含 DWARF 类型定义。可搜索字符串。Linux 分析需要内存镜像和匹配的 ISF JSON。",
   "This is a kernel address map, not a memory image. It does not contain Linux processes and cannot replace ISF JSON.": "这是内核地址映射，不是内存镜像。它本身不包含 Linux 进程，也不能替代 ISF JSON。",
   "This is an AD1 file container (FTK), not a directly readable RAM image. Open it in FTK Imager and extract a memory dump if one is included. String search reads container bytes without extraction; its offsets are not memory addresses.": "这是 FTK AD1 文件容器，不是可直接读取的内存镜像。请在 FTK Imager 中打开并提取其中可能存在的内存转储。字符串搜索仅扫描容器原始字节，不会解包；偏移并非内存地址。",
   "This is an ELF executable or shared library, not an ELF core dump. It is not a confirmed full-system RAM capture. String search is available.": "这是 ELF 程序或共享库，不是 ELF core dump。尚未确认为整机内存快照。可搜索字符串。",
@@ -747,7 +747,12 @@
   "Find in notebook": "在笔记中查找",
   "Previous match": "上一个匹配项",
   "Next match": "下一个匹配项",
-  "Run with Volatility 2": "使用 Volatility 2 运行",
-  "Place the Volatility 2 component next to the application to use it here.": "将 Volatility 2 组件放在应用程序旁边即可使用。",
-  "Volatility 2 profile": "Volatility 2 配置文件"
+  "Copy CSV": "复制 CSV",
+  "Preparing CSV…": "正在准备 CSV…",
+  "Results copied as CSV.": "已将结果复制为 CSV。",
+  "Could not prepare the CSV for copying.": "无法准备要复制的 CSV。",
+  "The CSV exceeds 32 MiB. Download it or filter the rows.": "CSV 超过 32 MiB。请下载文件或筛选行。",
+  "Could not write the CSV to the clipboard.": "无法将 CSV 写入剪贴板。",
+  "Analysis engine is no longer available": "分析引擎已不可用",
+  "OS detection was interrupted. Run detection again.": "系统检测已中断。请重新检测。"
 }

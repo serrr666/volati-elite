@@ -110,13 +110,28 @@ def init():
         """)
         for table, additions in {
             "cases": {"source_kind": "TEXT DEFAULT 'memory'", "detect_status": "TEXT DEFAULT 'manual'", "detected_banner": "TEXT DEFAULT ''", "image_format": "TEXT DEFAULT ''", "detect_message": "TEXT DEFAULT ''", "hash_progress": "REAL DEFAULT 0", "hash_error": "TEXT DEFAULT ''"},
-            "runs": {"purpose": "TEXT DEFAULT 'analysis'", "memory_peak_bytes": "INTEGER DEFAULT 0", "memory_budget_mb": "INTEGER DEFAULT 0", "pipeline_summary_json": "TEXT DEFAULT '{}'", "worker_command": "TEXT DEFAULT ''", "studio_version": "TEXT DEFAULT ''", "studio_sha256": "TEXT DEFAULT ''", "legacy_profile": "TEXT", "legacy_source_run": "TEXT"},
+            "runs": {"purpose": "TEXT DEFAULT 'analysis'", "memory_peak_bytes": "INTEGER DEFAULT 0", "memory_budget_mb": "INTEGER DEFAULT 0", "pipeline_summary_json": "TEXT DEFAULT '{}'", "worker_command": "TEXT DEFAULT ''", "studio_version": "TEXT DEFAULT ''", "studio_sha256": "TEXT DEFAULT ''"},
         }.items():
             existing = {row[1] for row in c.execute(f"PRAGMA table_info({table})")}
             for name, definition in additions.items():
                 if name not in existing:
                     c.execute(f"ALTER TABLE {table} ADD COLUMN {name} {definition}")
+        run_columns = {row[1] for row in c.execute('PRAGMA table_info(runs)')}
+        if 'legacy_profile' in run_columns:
+            # Preserve historical runs and their original engine/command. Stop
+            # pending work so it cannot execute under a different engine.
+            c.execute("""UPDATE runs SET status='interrupted', finished=?,
+                message='Analysis engine is no longer available'
+                WHERE legacy_profile IS NOT NULL AND status IN ('queued','running','indexing')""", (now(),))
+            c.execute('ALTER TABLE runs DROP COLUMN legacy_profile')
+        if 'legacy_source_run' in run_columns:
+            c.execute('ALTER TABLE runs DROP COLUMN legacy_source_run')
         c.execute("UPDATE runs SET status='interrupted', finished=?, message='Application restarted during execution' WHERE status IN ('running','indexing')", (now(),))
+        c.execute("""UPDATE cases SET detect_status='interrupted', detect_message=?
+            WHERE detect_status IN ('banners','windows','queued') AND NOT EXISTS (
+                SELECT 1 FROM runs WHERE case_id=cases.id AND purpose IN ('detection-banners','detection-windows')
+                AND status='queued'
+            )""", ('Определение ОС прервано. Запустите повторное определение.',))
 
     with connection() as c:
         c.execute('CREATE TABLE IF NOT EXISTS workspace_revision(id INTEGER PRIMARY KEY,revision INTEGER NOT NULL)')
@@ -160,5 +175,5 @@ def save_settings(values):
 def serialize_run(r):
     return {**r, "params": json.loads(r["params"]), "columns": json.loads(r["columns_json"]),
             "offline": bool(r["offline"]), "settings": json.loads(r["settings_json"]),
-            "unsupported_console_build": unsupported_console_build(r['plugin'], r.get('error')) if r['status']=='failed' and not r.get('legacy_profile') else None,
+            "unsupported_console_build": unsupported_console_build(r['plugin'], r.get('error')) if r['status']=='failed' else None,
             "pipeline_summary": json.loads(r.get("pipeline_summary_json") or '{}')}

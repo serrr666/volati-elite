@@ -81,3 +81,40 @@ def test_existing_console_failures_gain_a_build_specific_diagnosis(client):
     assert runs['windows.cmdscan.CmdScan']['unsupported_console_build'] == '6.1.7600'
     assert runs['windows.info.Info']['unsupported_console_build'] is None
     assert runs['windows.consoles.Consoles']['error'] == error
+
+
+def test_upgrade_keeps_results_and_interrupts_jobs_for_removed_engine(client):
+    for column in ('legacy_profile', 'legacy_source_run'):
+        db.execute(f'ALTER TABLE runs ADD COLUMN {column} TEXT')
+    plugin = 'windows.consoles.Consoles'
+    insert_run('previous', plugin)
+    insert_run('old_queue', plugin, status='queued')
+    insert_run('regular_queue', plugin, status='queued')
+    db.execute("UPDATE runs SET legacy_profile='Win7SP0x86',engine_version='2.6.1' WHERE id IN ('previous','old_queue')")
+    insert_row('previous', {'Command': 'test'})
+    db.execute("INSERT INTO bookmarks VALUES('bookmark','case','previous',0,'history',?)", (db.now(),))
+
+    db.init()
+    db.init()
+
+    runs = {run['id']: run for run in client.get('/api/cases/case/runs').json()}
+    assert runs['old_queue']['status'] == 'interrupted'
+    assert runs['regular_queue']['status'] == 'queued'
+    assert (runs['previous']['status'], runs['previous']['engine_version']) == ('completed', '2.6.1')
+    assert 'legacy_profile' not in runs['previous'] and 'legacy_source_run' not in runs['previous']
+    assert client.get('/api/cases/case/bookmarks').json()[0]['note'] == 'history'
+    assert client.post('/api/runs/old_queue/legacy').status_code in (404, 405)
+
+
+def test_restart_exposes_interrupted_detection_and_preserves_queued_detection(client):
+    db.execute("UPDATE cases SET detect_status='windows' WHERE id='case'")
+    insert_run('detect', 'windows.info.Info', status='queued')
+    db.execute("UPDATE runs SET purpose='detection-windows' WHERE id='detect'")
+    db.init()
+    assert db.one("SELECT detect_status FROM cases WHERE id='case'")['detect_status'] == 'windows'
+
+    db.execute("UPDATE runs SET status='running' WHERE id='detect'")
+    db.init()
+    assert db.one("SELECT detect_status FROM cases WHERE id='case'")['detect_status'] == 'interrupted'
+    assert db.one("SELECT status FROM runs WHERE id='detect'")['status'] == 'interrupted'
+    assert client.get('/api/workspace/pulse').json()['busy'] == 0

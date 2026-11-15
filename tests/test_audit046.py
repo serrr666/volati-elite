@@ -45,6 +45,13 @@ def test_literal_column_names_and_search(client46):
     assert c.get('/api/runs/r46/values',params={'column':'Port); DROP TABLE runs;--'}).status_code==422
     assert c.get('/api/runs/r46/rows',params={'filters':json.dumps({'not a column':{'exclude':False,'values':[]}})}).status_code==422
 
+
+def test_column_value_search_matches_cyrillic_without_changing_stored_text(client46):
+    db.execute("UPDATE result_rows SET data=? WHERE run_id='r46' AND idx=0",
+               (json.dumps({'Process': 'Служба'}),))
+    values = client46.get('/api/runs/r46/values', params={'column': 'Process', 'search': 'СЛУЖБА'}).json()['values']
+    assert [item['value'] for item in values] == ['Служба']
+
 def test_full_filtered_export_and_unchanged_source(client46):
     c=client46;payload={'filters':rule('Port',['integer:443','text:443']),'q':'p','format':'json'}
     output=c.get('/api/runs/r46/export',params=payload).json()

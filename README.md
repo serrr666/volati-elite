@@ -1,4 +1,4 @@
-# volati elite
+# Volati Elite
 
 Volati Elite is a Windows desktop interface for [Volatility 3](https://github.com/volatilityfoundation/volatility3). It brings plugin execution, result analysis and investigation notes into a single workspace.
 
@@ -6,19 +6,17 @@ Volati Elite is a Windows desktop interface for [Volatility 3](https://github.co
 
 ## Download
 
-[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.11-test.1)
+[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.12-test.1)
 
-Download `VolatiElite.exe` from the pre-release assets and run it.
-
-For optional Volatility 2 support, extract `legacy-volatility2.zip` next to the EXE. The extracted `legacy-volatility2` folder must sit directly beside `VolatiElite.exe`. After a supported failure in Volatility 3, `Consoles` and `CmdScan` can be retried through Volatility 2 on verified Windows 7 SP0 x86 images with default options.
+Download `VolatiElite.exe` from the release assets and run it. The build includes Volatility 3 and is unsigned. `SHA256SUMS.txt` contains the executable checksum.
 
 ## Quick start
 
 1. Drop a memory image into the window, or choose it through the file dialog.
-2. Let the app finish the source checks and review the detected system. Linux and macOS analysis may require matching kernel data.
+2. Wait for SHA-256 verification and review the detected OS. Analysis starts offline by default. If a plugin requires OS data, open **Settings → Analysis** to add matching local data or allow retrieval when appropriate.
 3. Start with processes, network connections or command lines. Select several plugins to queue them together.
 4. Filter the results, bookmark useful rows and write down your findings in the investigation notebook.
-5. Export the relevant results as CSV or JSON, or save your notes as TXT.
+5. Use **Export → Copy CSV** to copy the results, or download them as CSV or JSON. Notes can be saved as TXT.
 
 The original image is read from its existing location. Case data, results, caches and notes are stored locally. The profile folder remains `%LOCALAPPDATA%\Vol3Studio` for compatibility with earlier test builds.
 
@@ -46,9 +44,9 @@ Windows is the desktop target. Analysis support for Windows, Linux and macOS ima
 
 ## Testing and feedback
 
-This is a test project, not a validated forensic suite. Image compatibility, plugins and resource usage need further testing. Cross-check important findings with the underlying engine; an empty result does not prove an artifact is absent.
+Volati Elite is currently a test build for analyst feedback. Cross-check important findings with the underlying engine. An empty result does not establish that an artifact is absent.
 
-Bug reports are welcome in [Issues](https://github.com/serrr666/volati-elite/issues), or in Telegram direct @serpf. Include the app version, plugin, image format and steps to reproduce. Please do not attach private memory images, credentials or unreviewed case data. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Bug reports are welcome in [Issues](https://github.com/serrr666/volati-elite/issues), or in Telegram direct @serpf. Tell me what you were trying to do, what happened, and where you switched back to another tool. For analysis errors, include the app version, plugin, image format and the first relevant line from **Log and command**. Please share only sanitized examples. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License and author
 

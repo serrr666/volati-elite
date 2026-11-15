@@ -546,7 +546,7 @@ def test_source_explanation_does_not_pin_import_language(client,tmp_path):
         client.put('/api/preferences',json={**previous,'language':'en'})
         path=tmp_path/'profile.dwarf';path.write_bytes(b'\n.debug_info\nDW_TAG_compile_unit\n')
         case=client.post('/api/cases',json={'name':path.name,'path':str(path)}).json()
-        assert case['source_kind']=='auxiliary' and case['detect_message'].startswith('Это текстовое описание')
+        assert case['source_kind']=='auxiliary' and case['detect_message'].startswith('Файл содержит описание типов DWARF.')
         client.put('/api/preferences',json={**previous,'language':'ru'})
         cases=client.get('/api/cases').json()
         assert next(c for c in cases if c['id']==case['id'])['detect_message']==case['detect_message']

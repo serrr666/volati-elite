@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
-from . import __version__, catalog, db, legacy, runner
+from . import __version__, catalog, db, runner
 from .artifact_hashes import ArtifactChanged, artifact_digests
 from .pipeline import PipelineInput
 from . import result_filters
@@ -218,8 +218,7 @@ def health():
     from .build_info import BUILD_DATE
     return {"app": "volati elite", "version": __version__, "build_date":BUILD_DATE, "engine_version": catalog.CATALOG["version"],
             "engine_status": catalog.CATALOG["status"], "plugin_count": len(catalog.CATALOG["plugins"]),
-            "warnings": catalog.CATALOG["warnings"], "data_dir": str(db.DATA), "local_only": True,
-            "legacy_available": legacy.runtime() is not None}
+            "warnings": catalog.CATALOG["warnings"], "data_dir": str(db.DATA), "local_only": True}
 
 
 @app.get("/api/plugins")
@@ -282,12 +281,13 @@ def attach_case(values):
         case_id = uuid.uuid4().hex[:16]
         db.execute("INSERT INTO cases (id,name,path,os,size,mtime_ns,created) VALUES (?,?,?,?,?,?,?)",
                    (case_id, values.name.strip() or path.name, str(path), values.os, stat.st_size, stat.st_mtime_ns, db.now()))
-    threading.Thread(target=runner.hash_case, args=(case_id,), daemon=True).start()
     from . import detection
     try:
         detection.start(case_id, auto=values.os=='unknown')
     except OSError as exc:
         db.execute("UPDATE cases SET detect_status='unknown',detect_message=? WHERE id=?",(str(exc),case_id))
+    finally:
+        threading.Thread(target=runner.hash_case, args=(case_id,), daemon=True).start()
     return case_or_404(case_id)
 
 
@@ -437,14 +437,8 @@ def save_note_draft(case_id: str, value: NoteDraftInput):
 
 @app.get("/api/cases/{case_id}/runs")
 def runs(case_id: str):
-    case = case_or_404(case_id)
-    serialized = []
-    for run in db.all_rows("SELECT * FROM runs WHERE case_id=? ORDER BY created DESC", (case_id,)):
-        result = db.serialize_run(run)
-        if result['unsupported_console_build'] == '6.1.7600':
-            result['legacy_console_profile'] = legacy.supported_profile(case, run)
-        serialized.append(result)
-    return serialized
+    case_or_404(case_id)
+    return [db.serialize_run(r) for r in db.all_rows("SELECT * FROM runs WHERE case_id=? ORDER BY created DESC", (case_id,))]
 
 
 @app.post("/api/cases/{case_id}/pipeline", status_code=201)
@@ -493,29 +487,9 @@ def cancel_run(run_id: str):
 @app.post("/api/runs/{run_id}/retry", status_code=201)
 def retry(run_id: str):
     run = run_or_404(run_id)
-    if run.get('legacy_source_run'):
-        return enqueue_legacy(run['legacy_source_run'])
     if run.get("purpose") == "pipeline":
         return enqueue_pipeline(run["case_id"], PipelineInput.model_validate_json(run["params"]))
     return enqueue(run["case_id"], RunInput(plugin=run["plugin"], params=json.loads(run["params"])))
-
-
-@app.post('/api/runs/{run_id}/legacy', status_code=201)
-def enqueue_legacy(run_id: str):
-    source = run_or_404(run_id)
-    case = case_or_404(source['case_id'])
-    profile = legacy.supported_profile(case, source)
-    if not profile:
-        raise HTTPException(409, 'A supported Windows 7 x86 profile and a matching Volatility 3 failure are required')
-    if legacy.runtime() is None:
-        raise HTTPException(409, 'Volatility 2 component is unavailable')
-    run_id_new = uuid.uuid4().hex[:16]
-    db.execute("""INSERT INTO runs(id,case_id,plugin,params,status,created,engine_version,offline,settings_json,
-        input_sha256,legacy_profile,legacy_source_run) VALUES(?,?,?,?,'queued',?,?,1,?,?,?,?)""",
-        (run_id_new, case['id'], source['plugin'], source['params'], db.now(), legacy.VERSION,
-         json.dumps(db.settings()), case['sha256'], profile, run_id))
-    runner.WAKE.set()
-    return db.serialize_run(run_or_404(run_id_new))
 
 
 @app.get('/api/runs/{run_id}/values')
@@ -770,14 +744,14 @@ def report(case_id: str):
     rows = "".join(f"<tr><td>{esc(r['plugin'])}</td><td>{esc(r['status'] + (' · PARTIAL (row limit)' if r.get('pipeline_summary',{}).get('limit_reached') else ''))}</td><td>{r['row_count']}</td><td>{esc(r['started'])}</td></tr>" for r in jobs)
     findings = "".join(f"<article><h3>{esc(b['plugin'])} · row {b['row_idx']+1}</h3><p>{esc(b['note'])}</p><pre>{esc(json.dumps(b['data'],ensure_ascii=False,indent=2))}</pre></article>" for b in saved)
     provenance = "".join(f"<details><summary>{esc(r['plugin'])} · {esc(r['id'])}</summary><pre>{esc(r['command'])}\n\nParameters: {esc(json.dumps(r['params'],ensure_ascii=False,indent=2))}\nWorker argv: {esc(r.get('worker_command',''))}\nPipeline summary: {esc(json.dumps(r.get('pipeline_summary',{}),ensure_ascii=False))}</pre><p>Studio used: {esc(r.get('studio_version') or 'not recorded (legacy or not started)')}<br>Studio EXE SHA-256: {esc(r.get('studio_sha256') or 'not recorded (source, legacy or not started)')}<br>Engine: {esc(r['engine_version'])} · SHA-256: {esc(r['input_sha256'])} · Offline: {r['offline']}</p></details>" for r in jobs)
-    content = f"""<!doctype html><html lang="ru"><meta charset="utf-8"><title>{esc(case['name'])} · volati elite</title>
+    content = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{esc(case['name'])} · Volati Elite</title>
     <style>body{{font:15px/1.6 system-ui;max-width:1100px;margin:60px auto;padding:0 30px;color:#18212e}}h1{{letter-spacing:-1px;overflow-wrap:anywhere}}p{{overflow-wrap:anywhere}}.brand{{color:#d96c2e;font-weight:800}}table{{width:100%;border-collapse:collapse}}td,th{{text-align:left;border-bottom:1px solid #ddd;padding:12px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f5f7;padding:18px;border-radius:8px}}article{{border:1px solid #ddd;padding:20px;margin:20px 0;border-radius:12px}}.demo{{background:#fff1dd;padding:15px}}@media print{{body{{margin:0}}details{{display:block}}}}</style>
-    <div class="brand">VOLATILITY STUDIO / CASE REPORT</div><h1>{esc(case['name'])}</h1>
+    </head><body><div class="brand">VOLATI ELITE / CASE REPORT</div><h1>{esc(case['name'])}</h1>
     {'<p class="demo">SYNTHETIC DEMONSTRATION. No memory image was analysed.</p>' if case['kind']=='demo' else ''}
     <p>Generated: {esc(db.now())} · Report generated by Studio {esc(__version__)} · Times retain UTC offsets.</p><p>Image: {esc(case['path'])}<br>SHA-256: {esc(case['sha256'])}<br>Hash status: {esc(case['hash_status'])}</p>
     <h2>Analyst notes</h2><pre>{esc(case['notes'])}</pre><h2>Plugin runs</h2><table><tr><th>Plugin</th><th>Status</th><th>Rows</th><th>Started (UTC)</th></tr>{rows}</table>
     <h2>Bookmarked observations</h2>{findings or '<p>No observations bookmarked.</p>'}<h2>Execution provenance</h2>{provenance}
-    <p>Independent interface powered by Volatility 3. Plugin output and analyst interpretations are distinct. An empty result does not establish absence of malicious activity.</p></html>"""
+    <p>Independent interface powered by Volatility 3. Plugin output and analyst interpretations are distinct. An empty result does not establish absence of malicious activity.</p></body></html>"""
     return HTMLResponse(content, headers={"Content-Disposition": f'attachment; filename="case-{case_id}.html"'})
 
 

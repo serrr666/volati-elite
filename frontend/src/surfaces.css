@@ -6,6 +6,9 @@
 .dropdown-menu{padding:5px;border-radius:11px;min-width:206px}
 .dropdown-menu a{padding:10px 11px;border-radius:7px;font-size:12px;line-height:18px;color:var(--text)}
 .dropdown-menu a:hover,.columns-menu label:hover{background:var(--menu-hover);color:var(--text)}
+.dropdown-menu .copy-csv-action{width:100%;display:flex;align-items:center;gap:8px;padding:10px 11px;border:0;border-radius:7px;background:transparent;text-align:left;font:inherit;font-size:12px;line-height:18px;color:var(--text)}
+.dropdown-menu .copy-csv-action:hover:not(:disabled){background:var(--menu-hover)}
+.dropdown-menu .copy-csv-action:disabled{color:var(--muted);cursor:wait}
 .columns-menu{max-height:min(420px,55vh);min-width:230px;scrollbar-width:thin}
 .columns-menu label{padding:8px 10px;gap:10px;font-size:12px;line-height:18px;color:var(--text);border-radius:6px;cursor:pointer}
 .columns-menu .reset-column-widths{font-size:12px;line-height:18px;padding:10px;margin:5px 0 0;border-radius:0 0 7px 7px}

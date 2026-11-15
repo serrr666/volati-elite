@@ -156,7 +156,7 @@
   "Create pipeline": "Créer une chaîne",
   "Custom budget": "Limite personnalisée",
   "Custom memory budget in GB": "Limite mémoire personnalisée en Go",
-  "DWARF text · Volatility 2 profile data": "Texte DWARF · profil Volatility 2",
+  "DWARF text · type definitions": "Texte DWARF · définitions de types",
   "Dark": "Sombre",
   "Dark theme": "Thème sombre",
   "Data source": "Source des données",
@@ -556,7 +556,7 @@
   "These notes are stored separately from cases and are excluded from case reports.": "Ces notes sont stockées séparément des dossiers et exclues de leurs rapports.",
   "This folder may contain extracted data and sensitive information from images. Review its contents before sharing it.": "Ce dossier peut contenir des données extraites et des informations sensibles des images. Vérifiez son contenu avant de le partager.",
   "This is VMware snapshot inventory metadata, not RAM. Open the corresponding VMSS/VMEM/VMSN; metadata string search is available.": "Il s’agit de métadonnées d’inventaire VMware, pas de RAM. Ouvrez le VMSS/VMEM/VMSN correspondant ; la recherche de chaînes dans les métadonnées est disponible.",
-  "This is a Volatility 2 text type description, not a memory image. String search is available; Volatility 3 Linux analysis requires a RAM image and matching ISF JSON.": "Il s’agit d’une description textuelle de types Volatility 2, pas d’une image mémoire. La recherche de chaînes est disponible ; l’analyse Linux avec Volatility 3 exige une image RAM et un ISF JSON correspondant.",
+  "This file contains DWARF type definitions. String search is available. Linux analysis requires a RAM image and matching ISF JSON.": "Ce fichier contient des définitions de types DWARF. La recherche de chaînes est disponible. L’analyse Linux exige une image RAM et un ISF JSON correspondant.",
   "This is a kernel address map, not a memory image. It does not contain Linux processes and cannot replace ISF JSON.": "Il s’agit d’une carte des adresses du noyau, pas d’une image mémoire. Elle ne contient pas les processus Linux et ne remplace pas un ISF JSON.",
   "This is an AD1 file container (FTK), not a directly readable RAM image. Open it in FTK Imager and extract a memory dump if one is included. String search reads container bytes without extraction; its offsets are not memory addresses.": "Il s’agit d’un conteneur AD1 FTK, pas d’une image RAM directement lisible. Ouvrez-le dans FTK Imager et extrayez le dump mémoire éventuel. La recherche lit les octets sans décompression ; ses décalages ne sont pas des adresses mémoire.",
   "This is an ELF executable or shared library, not an ELF core dump. It is not a confirmed full-system RAM capture. String search is available.": "Il s’agit d’un programme ELF ou d’une bibliothèque, pas d’un core dump ELF. Ce n’est pas une capture RAM complète confirmée. La recherche de chaînes reste disponible.",
@@ -747,7 +747,12 @@
   "Find in notebook": "Rechercher dans le carnet",
   "Previous match": "Résultat précédent",
   "Next match": "Résultat suivant",
-  "Run with Volatility 2": "Exécuter avec Volatility 2",
-  "Place the Volatility 2 component next to the application to use it here.": "Placez le composant Volatility 2 à côté de l’application pour l’utiliser ici.",
-  "Volatility 2 profile": "Profil Volatility 2"
+  "Copy CSV": "Copier le CSV",
+  "Preparing CSV…": "Préparation du CSV…",
+  "Results copied as CSV.": "Résultats copiés au format CSV.",
+  "Could not prepare the CSV for copying.": "Impossible de préparer le CSV à copier.",
+  "The CSV exceeds 32 MiB. Download it or filter the rows.": "Le CSV dépasse 32 Mio. Téléchargez-le ou filtrez les lignes.",
+  "Could not write the CSV to the clipboard.": "Impossible de copier le CSV dans le presse-papiers.",
+  "Analysis engine is no longer available": "Le moteur d’analyse est indisponible",
+  "OS detection was interrupted. Run detection again.": "La détection du système a été interrompue. Relancez-la."
 }

@@ -42,8 +42,8 @@ def _inspect_source(path):
     if head.startswith(b'ADSEGMENTEDFILE\x00'):
         return {'kind':'unsupported','format':'AD1 logical evidence container','message':'Это контейнер файлов AD1 (FTK), а не прямой образ RAM. Откройте его в FTK Imager и извлеките дамп памяти, если он есть внутри. Поиск строк читает байты контейнера без распаковки; его смещения не являются адресами памяти.'}
     if b'.debug_info' in head[:128] and b'DW_TAG_' in head:
-        return {'kind':'auxiliary','format':'DWARF text · Volatility 2 profile data',
-                'message':'Это текстовое описание типов Volatility 2, а не образ памяти. Доступен поиск строк; для анализа Linux в Volatility 3 нужен RAM-образ и подходящий ISF JSON.'}
+        return {'kind':'auxiliary','format':'DWARF text · type definitions',
+                'message':'Файл содержит описание типов DWARF. Доступен поиск строк. Для анализа Linux нужны образ RAM и подходящий ISF JSON.'}
     if re.search(rb'(?m)^[0-9a-fA-F]{8,16}\s+[A-Za-z]\s+\S+',head) and path.name.lower().startswith('system.map'):
         return {'kind':'auxiliary','format':'Linux System.map · kernel address map',
                 'message':'Это карта адресов ядра, а не образ памяти. Она сама по себе не содержит процессов Linux и не заменяет ISF JSON.'}
@@ -81,7 +81,7 @@ EN = {
 
  'Это контейнер файлов AD1 (FTK), а не прямой образ RAM. Откройте его в FTK Imager и извлеките дамп памяти, если он есть внутри. Поиск строк читает байты контейнера без распаковки; его смещения не являются адресами памяти.':'This is an AD1 file container (FTK), not a directly readable RAM image. Open it in FTK Imager and extract a memory dump if one is included. String search reads container bytes without extraction; its offsets are not memory addresses.',
  'Память читается непосредственно из контейнера VMware. Конвертация и копирование образа не требуются.':'Memory is read directly from the VMware container; no conversion or image copy is required.',
- 'Это текстовое описание типов Volatility 2, а не образ памяти. Доступен поиск строк; для анализа Linux в Volatility 3 нужен RAM-образ и подходящий ISF JSON.':'This is a Volatility 2 text type description, not a memory image. String search is available; Volatility 3 Linux analysis requires a RAM image and matching ISF JSON.',
+ 'Файл содержит описание типов DWARF. Доступен поиск строк. Для анализа Linux нужны образ RAM и подходящий ISF JSON.':'This file contains DWARF type definitions. String search is available. Linux analysis requires a RAM image and matching ISF JSON.',
  'Это карта адресов ядра, а не образ памяти. Она сама по себе не содержит процессов Linux и не заменяет ISF JSON.':'This is a kernel address map, not a memory image. It does not contain Linux processes and cannot replace ISF JSON.',
  'Это описание снимков VMware, а не содержимое RAM. Откройте соответствующий VMSS/VMEM/VMSN; поиск строк в метаданных доступен.':'This is VMware snapshot inventory metadata, not RAM. Open the corresponding VMSS/VMEM/VMSN; metadata string search is available.',
  'Слой ELF в установленном Volatility 3 поддерживает ELF64. Этот ELF32 нельзя автоматически считать совместимым RAM-образом; поиск строк доступен.':'The installed Volatility 3 ELF layer supports ELF64. This ELF32 container cannot be treated as a compatible RAM image; string search is available.',
