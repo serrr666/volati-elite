@@ -1,12 +1,12 @@
 # Volati Elite
 
-Volati Elite is a Windows desktop interface for [Volatility 3](https://github.com/volatilityfoundation/volatility3). It brings plugin execution, result analysis and investigation notes into a single workspace.
+Volati Elite is a Windows desktop interface for [Volatility 3](https://github.com/volatilityfoundation/volatility3). It brings plugin execution, result analysis and investigation notes into a single and simple workspace.
 
 ## Download
 
 [Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.12-test.1)
 
-Download `VolatiElite.exe` from the release assets and run it. The build includes Volatility 3 and is unsigned. `SHA256SUMS.txt` contains the executable checksum.
+Download `VolatiElite.exe` from the release assets and run it.
 
 ## Quick start
 
@@ -38,13 +38,13 @@ Windows is the desktop target. Analysis support for Windows, Linux and macOS ima
 
 ### Plugins
 
-![Volati Elite plugin library](docs/images/plugins.png)
+![Volati Elite plugin library](docs/images/plugins1.png)
 
 ## Testing and feedback
 
 Volati Elite is currently a test build for analyst feedback. Cross-check important findings with the underlying engine. An empty result does not establish that an artifact is absent.
 
-Bug reports are welcome in [Issues](https://github.com/serrr666/volati-elite/issues), or in Telegram direct @serpf. Tell me what you were trying to do, what happened, and where you switched back to another tool. For analysis errors, include the app version, plugin, image format and the first relevant line from **Log and command**. Please share only sanitized examples. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Bug reports are welcome in [Issues](https://github.com/serrr666/volati-elite/issues), or in Telegram direct @serpf
 
 ## License and author
 
