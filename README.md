@@ -2,8 +2,6 @@
 
 Volati Elite is a Windows desktop interface for [Volatility 3](https://github.com/volatilityfoundation/volatility3). It brings plugin execution, result analysis and investigation notes into a single workspace.
 
-**Early test version.** Stability, performance and everyday usability are still being improved. This is an independent project, not an official Volatility Foundation product.
-
 ## Download
 
 [Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.12-test.1)
