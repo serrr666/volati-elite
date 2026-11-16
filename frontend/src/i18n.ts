@@ -775,3 +775,19 @@ Object.assign(en, {
     "Движок анализа больше недоступен": "Analysis engine is no longer available"
 });
 sourceRuByEnglish['Analysis engine is no longer available'] = 'Движок анализа больше недоступен';
+
+Object.assign(en, {
+    'Скрыть предложенные плагины': 'Hide suggested plugins',
+    'Показывать предложенные плагины на главном экране': 'Show suggested plugins on Home',
+    'Рекомендации скрыты. Вернуть их можно в настройках интерфейса.': 'Suggestions hidden. You can restore them in Appearance settings.'
+});
+
+Object.assign(en, {
+    'Где лежат страницы памяти процесса?': 'Where are the process memory pages mapped?',
+    'Строит карту памяти. Укажите PID и включите --dump, чтобы сохранить страницы процесса в .dmp. Для извлечения кэшированного содержимого файла используйте DumpFiles.': 'Maps memory pages. Specify a PID and enable --dump to save process memory to a .dmp file. Use DumpFiles to recover cached file content.',
+    'Без PID Volatility попытается сохранить дамп каждого процесса. Проверьте свободное место.': 'Without a PID, Volatility tries to dump every process. Check available disk space.',
+    'Готова карта памяти. Чтобы получить файл .dmp, включите извлечение и укажите PID нужного процесса.': 'The memory map is ready. Enable extraction and specify the process PID to create a .dmp file.',
+    'Извлечь память процесса': 'Extract process memory',
+    'Загружаем извлечённые файлы…': 'Loading extracted files…',
+    'Не удалось загрузить список извлечённых файлов': 'Could not load extracted files'
+});

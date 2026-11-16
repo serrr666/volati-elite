@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.14
+
+- Make process memory extraction visible in Memmap and open the extracted files and hashes when the run finishes.
+- Pass the correct PID argument shape when opening a plugin from a process row.
+- Show loading and retry states when reading extracted files.
+- Prevent duplicate queue submissions while a plugin launch is being saved.
+
+## 0.4.13
+
+- Hide the suggested plugins on Home and restore them from Appearance settings.
+
 ## 0.4.12
 
 - Copy result rows as CSV from the Export menu, including all rows that match the current filters.

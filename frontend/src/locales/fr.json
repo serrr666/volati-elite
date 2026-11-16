@@ -754,5 +754,15 @@
   "The CSV exceeds 32 MiB. Download it or filter the rows.": "Le CSV dépasse 32 Mio. Téléchargez-le ou filtrez les lignes.",
   "Could not write the CSV to the clipboard.": "Impossible de copier le CSV dans le presse-papiers.",
   "Analysis engine is no longer available": "Le moteur d’analyse est indisponible",
-  "OS detection was interrupted. Run detection again.": "La détection du système a été interrompue. Relancez-la."
+  "OS detection was interrupted. Run detection again.": "La détection du système a été interrompue. Relancez-la.",
+  "Hide suggested plugins": "Masquer les modules suggérés",
+  "Show suggested plugins on Home": "Afficher les modules suggérés sur l’accueil",
+  "Suggestions hidden. You can restore them in Appearance settings.": "Suggestions masquées. Vous pouvez les réactiver dans les réglages d’apparence.",
+  "Where are the process memory pages mapped?": "Où sont mappées les pages mémoire du processus ?",
+  "Maps memory pages. Specify a PID and enable --dump to save process memory to a .dmp file. Use DumpFiles to recover cached file content.": "Affiche la carte mémoire. Indiquez un PID et activez --dump pour enregistrer la mémoire du processus dans un fichier .dmp. Utilisez DumpFiles pour récupérer le contenu des fichiers en cache.",
+  "Without a PID, Volatility tries to dump every process. Check available disk space.": "Sans PID, Volatility tente d’extraire la mémoire de chaque processus. Vérifiez l’espace disque disponible.",
+  "The memory map is ready. Enable extraction and specify the process PID to create a .dmp file.": "La carte mémoire est prête. Activez l’extraction et indiquez le PID du processus pour créer un fichier .dmp.",
+  "Extract process memory": "Extraire la mémoire du processus",
+  "Loading extracted files…": "Chargement des fichiers extraits…",
+  "Could not load extracted files": "Impossible de charger les fichiers extraits"
 }

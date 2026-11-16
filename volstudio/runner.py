@@ -200,9 +200,9 @@ def execute(run):
                 db.update_run(run["id"], progress=n * 20, message="Synthetic demonstration — no memory image analysed")
                 time.sleep(0.14)
             data = demo.rows(run["plugin"])
-            params = json.loads(run["params"])
-            if params.get("pid"):
-                data = [row for row in data if row.get("PID") in params["pid"]]
+            if "pid" in params:
+                pids = params["pid"] if isinstance(params["pid"], list) else [params["pid"]]
+                data = [row for row in data if row.get("PID") in pids]
             result_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
             log_path.write_text("SYNTHETIC DEMONSTRATION. Results are fixtures, not Volatility output.\n", encoding="utf-8")
         else:

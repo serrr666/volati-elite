@@ -127,6 +127,7 @@ class PreferencesInput(BaseModel):
     theme: str = Field(default_factory=default_theme)
     last_case: str = ""
     hide_tip: bool = False
+    hide_overview_suggestions: bool = False
     open_cases: list[str] | None = Field(default=None,max_length=1000)
     hidden_recent_cases: list[str] = Field(default_factory=list, max_length=1000)
     favorite_plugins: list[str] = Field(default_factory=list, max_length=1000)
@@ -141,6 +142,7 @@ def preferences():
     if opened is None:opened=[last] if last in ids else []
     opened=list(dict.fromkeys(cid for cid in opened if cid in ids))
     return {"language":cfg.get("language") if cfg.get("language") in SUPPORTED_LANGUAGES else default_language(),"theme":cfg.get("theme",default_theme()),"last_case":last if last in opened else '',"hide_tip":cfg.get("hide_tip",False),'open_cases':opened,
+            'hide_overview_suggestions': cfg.get('hide_overview_suggestions', False),
             'hidden_recent_cases': list(dict.fromkeys(cid for cid in cfg.get('hidden_recent_cases', []) if cid in ids)),
             'favorite_plugins': cfg.get('favorite_plugins', [])}
 

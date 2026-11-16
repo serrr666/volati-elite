@@ -39,6 +39,9 @@
 .artifact-digests .icon-button{width:28px;height:28px}
 .filescan-pivot{margin:12px 0}
 .filescan-pivot p{font-size:13px;color:var(--muted);margin:8px 0}
+.memmap-notice{flex-wrap:wrap;justify-content:space-between}
+.memmap-notice>span{flex:1 1 260px}
+.memmap-notice>.text-button{flex:none}
 .footer-run-error{color:var(--danger,var(--accent))}
 
 .notebook-toggle.active{color:var(--accent);background:var(--hover)}

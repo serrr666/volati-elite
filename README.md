@@ -4,7 +4,7 @@ Volati Elite is a Windows desktop interface for [Volatility 3](https://github.co
 
 ## Download
 
-[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.12-test.1)
+[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.14-test.1)
 
 Download `VolatiElite.exe` from the release assets and run it.
 

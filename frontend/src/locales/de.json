@@ -754,5 +754,15 @@
   "The CSV exceeds 32 MiB. Download it or filter the rows.": "Die CSV ist größer als 32 MiB. Laden Sie sie herunter oder filtern Sie die Zeilen.",
   "Could not write the CSV to the clipboard.": "Die CSV konnte nicht in die Zwischenablage geschrieben werden.",
   "Analysis engine is no longer available": "Die Analyse-Engine ist nicht mehr verfügbar",
-  "OS detection was interrupted. Run detection again.": "Die Betriebssystemerkennung wurde unterbrochen. Starten Sie die Erkennung erneut."
+  "OS detection was interrupted. Run detection again.": "Die Betriebssystemerkennung wurde unterbrochen. Starten Sie die Erkennung erneut.",
+  "Hide suggested plugins": "Vorgeschlagene Plugins ausblenden",
+  "Show suggested plugins on Home": "Vorgeschlagene Plugins auf der Startseite anzeigen",
+  "Suggestions hidden. You can restore them in Appearance settings.": "Vorschläge ausgeblendet. Sie können sie in den Einstellungen zur Oberfläche wieder einblenden.",
+  "Where are the process memory pages mapped?": "Wo sind die Speicherseiten des Prozesses zugeordnet?",
+  "Maps memory pages. Specify a PID and enable --dump to save process memory to a .dmp file. Use DumpFiles to recover cached file content.": "Zeigt die Speicherzuordnung. Geben Sie eine PID an und aktivieren Sie --dump, um den Prozessspeicher als .dmp-Datei zu speichern. Verwenden Sie DumpFiles für zwischengespeicherte Dateiinhalte.",
+  "Without a PID, Volatility tries to dump every process. Check available disk space.": "Ohne PID versucht Volatility, den Speicher jedes Prozesses zu sichern. Prüfen Sie den freien Speicherplatz.",
+  "The memory map is ready. Enable extraction and specify the process PID to create a .dmp file.": "Die Speicherzuordnung ist fertig. Aktivieren Sie die Extraktion und geben Sie die Prozess-PID an, um eine .dmp-Datei zu erstellen.",
+  "Extract process memory": "Prozessspeicher extrahieren",
+  "Loading extracted files…": "Extrahierte Dateien werden geladen…",
+  "Could not load extracted files": "Extrahierte Dateien konnten nicht geladen werden"
 }

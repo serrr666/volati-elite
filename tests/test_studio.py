@@ -201,6 +201,27 @@ def test_pid_filter_and_run_provenance(client,demo_case):
     assert {r["data"]["PID"] for r in rows["rows"]}=={4280,4860}
 
 
+def test_runner_filters_scalar_pid(client,demo_case,monkeypatch):
+    from volstudio import demo
+    original_rows = demo.rows
+    monkeypatch.setattr(demo, "rows", lambda plugin: (
+        [{"PID": 4280}, {"PID": 4860}] if plugin == "windows.memmap.Memmap" else original_rows(plugin)
+    ))
+    response = client.post("/api/cases/demo/runs", json={
+        "plugin": "windows.memmap.Memmap", "params": {"pid": 4280, "dump": True},
+    })
+    assert response.status_code == 201, response.text
+    run_id = response.json()["id"]
+    runs = wait(client, "demo", lambda runs: any(
+        run["id"] == run_id and run["status"] in ("completed", "failed") for run in runs
+    ))
+    run = next(run for run in runs if run["id"] == run_id)
+    assert run["status"] == "completed", run["error"]
+    assert run["params"] == {"pid": 4280, "dump": True}
+    assert run["row_count"] == 1
+    assert client.get(f"/api/runs/{run_id}/artifacts").json() == []
+
+
 def test_reject_uninstalled_plugin_and_injected_options(client,demo_case):
     assert client.post("/api/cases/demo/runs",json={"plugin":"powershell.exe -Command calc","params":{}}).status_code==400
     assert client.post("/api/cases/demo/runs",json={"plugin":"windows.pslist.PsList","params":{"unexpected":"; calc"}}).status_code==422
@@ -477,9 +498,10 @@ def test_initial_language_uses_configured_os_locale(monkeypatch,languages,expect
     localization.default_language.cache_clear()
 
 
-def test_language_and_theme_preferences_survive_engine_settings(client):
+def test_language_and_theme_preferences_survive_engine_settings(client, demo_case):
     preferences = {
         'language': 'en', 'theme': 'light', 'last_case': 'demo', 'hide_tip': False,
+        'hide_overview_suggestions': True,
         'hidden_recent_cases': ['demo'], 'favorite_plugins': ['windows.filescan.FileScan'],
     }
     assert client.put('/api/preferences', json=preferences).status_code == 200

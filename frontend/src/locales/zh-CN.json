@@ -754,5 +754,15 @@
   "The CSV exceeds 32 MiB. Download it or filter the rows.": "CSV 超过 32 MiB。请下载文件或筛选行。",
   "Could not write the CSV to the clipboard.": "无法将 CSV 写入剪贴板。",
   "Analysis engine is no longer available": "分析引擎已不可用",
-  "OS detection was interrupted. Run detection again.": "系统检测已中断。请重新检测。"
+  "OS detection was interrupted. Run detection again.": "系统检测已中断。请重新检测。",
+  "Hide suggested plugins": "隐藏推荐插件",
+  "Show suggested plugins on Home": "在首页显示推荐插件",
+  "Suggestions hidden. You can restore them in Appearance settings.": "推荐插件已隐藏。可在外观设置中重新显示。",
+  "Where are the process memory pages mapped?": "进程的内存页映射到哪里？",
+  "Maps memory pages. Specify a PID and enable --dump to save process memory to a .dmp file. Use DumpFiles to recover cached file content.": "显示内存映射。指定 PID 并启用 --dump，即可将进程内存保存为 .dmp 文件。若要恢复缓存的文件内容，请使用 DumpFiles。",
+  "Without a PID, Volatility tries to dump every process. Check available disk space.": "如果未指定 PID，Volatility 会尝试导出每个进程的内存。请检查可用磁盘空间。",
+  "The memory map is ready. Enable extraction and specify the process PID to create a .dmp file.": "内存映射已生成。启用提取并指定进程 PID，即可创建 .dmp 文件。",
+  "Extract process memory": "提取进程内存",
+  "Loading extracted files…": "正在加载提取的文件…",
+  "Could not load extracted files": "无法加载提取的文件"
 }
