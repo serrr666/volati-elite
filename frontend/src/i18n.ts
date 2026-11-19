@@ -387,6 +387,12 @@ Object.assign(en,{
 const bootLanguage=document.documentElement.hasAttribute('data-theme')?document.documentElement.lang:localStorage.getItem('vol3.lang');
 let language:Language=bootLanguage?normalizeLanguage(bootLanguage):navigator.languages.some(l=>/^ru(?:-|$)/i.test(l))?'ru':'en';
 const runtimeRu:Record<string,string>={'Preparing analysis':'Подготовка анализа','Analysis complete':'Анализ завершён','Analysis failed':'Ошибка анализа','Indexing results':'Обработка результатов','Cancelled by analyst':'Отменено аналитиком','Pipeline row limit reached':'Достигнут лимит строк конвейера'};
+Object.assign(runtimeRu, {
+  'Verifying saved source hash': 'Проверяем сохранённый SHA-256 образа',
+  'The source could not be opened for protected reading': 'Не удалось открыть исходный файл для защищённого чтения',
+  'The source file has changed since it was opened': 'Исходный файл изменился после открытия',
+  'Evidence changed since hashing. Attach a fresh case before analysis.': 'Образ изменился после расчёта SHA-256. Заново откройте файл для анализа.',
+});
 const friendlyRu:Record<string,string>={
  'Каталог плагинов':'Плагины',
  'Плагины Volatility 3':'Плагины',
@@ -790,4 +796,19 @@ Object.assign(en, {
     'Извлечь память процесса': 'Extract process memory',
     'Загружаем извлечённые файлы…': 'Loading extracted files…',
     'Не удалось загрузить список извлечённых файлов': 'Could not load extracted files'
+});
+
+Object.assign(en, {
+    "Файл больше недоступен. Запись о выгрузке сохранена.": "File unavailable. The extraction record is preserved.",
+    "Поиск строк в источнике": "Search strings in source",
+    "Файл источника": "Source file",
+    "Снимки VMware": "VMware snapshots",
+    "Снимок VMware": "VMware snapshot",
+    "Текущий снимок": "Current snapshot",
+    "Открыть файл состояния": "Open state file",
+    "Файл состояния не найден рядом": "State file missing from this folder",
+    "В каталоге нет записей о снимках": "No snapshot entries in the inventory",
+    "Не удалось прочитать список снимков": "Could not read snapshot inventory",
+    "Показана часть каталога снимков": "Showing part of the snapshot inventory",
+    "На этом образе версия Windows {0} уже оказалась несовместимой с разбором истории консоли.": "Console history analysis previously failed on this image with Windows {0}.",
 });

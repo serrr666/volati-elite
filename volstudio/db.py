@@ -43,9 +43,9 @@ def contains_value(encoded, query):
 
 
 @contextmanager
-def connection():
+def connection(*, check_same_thread=True):
     DATA.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DATA / "studio.sqlite3", timeout=30)
+    conn = sqlite3.connect(DATA / "studio.sqlite3", timeout=30, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.create_function("studio_casefold", 1, lambda value: value.casefold() if isinstance(value, str) else value, deterministic=True)
     conn.create_collation("studio_text", compare_text)
@@ -99,7 +99,8 @@ def init():
         );
         CREATE INDEX IF NOT EXISTS timeline_order ON timeline_events(time,run_id,row_idx,field);
         CREATE TABLE IF NOT EXISTS timeline_index (
-          run_id TEXT PRIMARY KEY REFERENCES runs(id),row_count INTEGER NOT NULL
+          run_id TEXT PRIMARY KEY REFERENCES runs(id),row_count INTEGER NOT NULL,
+          version INTEGER NOT NULL DEFAULT 1
         );
         CREATE INDEX IF NOT EXISTS runs_case_status ON runs(case_id,status);
         CREATE INDEX IF NOT EXISTS runs_latest_plugin ON runs(case_id,plugin,status,created,id);
@@ -109,8 +110,9 @@ def init():
         );
         """)
         for table, additions in {
-            "cases": {"source_kind": "TEXT DEFAULT 'memory'", "detect_status": "TEXT DEFAULT 'manual'", "detected_banner": "TEXT DEFAULT ''", "image_format": "TEXT DEFAULT ''", "detect_message": "TEXT DEFAULT ''", "hash_progress": "REAL DEFAULT 0", "hash_error": "TEXT DEFAULT ''"},
+            "cases": {"source_kind": "TEXT DEFAULT 'memory'", "detect_status": "TEXT DEFAULT 'manual'", "detected_banner": "TEXT DEFAULT ''", "image_format": "TEXT DEFAULT ''", "detect_message": "TEXT DEFAULT ''", "hash_progress": "REAL DEFAULT 0", "hash_error": "TEXT DEFAULT ''", "file_fingerprint": "TEXT"},
             "runs": {"purpose": "TEXT DEFAULT 'analysis'", "memory_peak_bytes": "INTEGER DEFAULT 0", "memory_budget_mb": "INTEGER DEFAULT 0", "pipeline_summary_json": "TEXT DEFAULT '{}'", "worker_command": "TEXT DEFAULT ''", "studio_version": "TEXT DEFAULT ''", "studio_sha256": "TEXT DEFAULT ''"},
+            "timeline_index": {"version": "INTEGER NOT NULL DEFAULT 1"},
         }.items():
             existing = {row[1] for row in c.execute(f"PRAGMA table_info({table})")}
             for name, definition in additions.items():

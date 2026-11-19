@@ -5,6 +5,15 @@ from fastapi import HTTPException
 EXACT="CASE WHEN j.type='integer' AND (j.value>9007199254740991 OR j.value< -9007199254740991) THEN studio_exact_integer(result_rows.data,j.key) ELSE j.value END"
 TOKEN="coalesce(j.type,'missing')||':'||coalesce(CAST(("+EXACT+") AS TEXT),'')"
 
+def ordering(columns, column, direction):
+    if not column:
+        return 'idx', ()
+    if column not in columns:
+        raise HTTPException(422, 'Unknown sort column')
+    sql_direction = 'DESC' if direction == 'desc' else 'ASC'
+    by_value = "(SELECT value FROM json_each(result_rows.data) WHERE key=? LIMIT 1) COLLATE studio_text"
+    return f'{by_value} {sql_direction},idx', (column,)
+
 def decode(encoded,columns):
     if not encoded:return {}
     try:
@@ -38,7 +47,7 @@ def values_page(db,run_id,columns,column,q,encoded,search,offset,limit):
     if len(search)>1000:raise HTTPException(422,'Value search is too long')
     where,args=predicate(run_id,columns,q,encoded,ignore=column)
     if search:
-        where += " AND instr(studio_casefold(coalesce(CAST(j.value AS TEXT),'')), studio_casefold(?))>0"
+        where += " AND instr(studio_casefold(coalesce(CAST(("+EXACT+") AS TEXT),'')), studio_casefold(?))>0"
         args.append(search)
     offset=max(0,offset);limit=min(200,max(1,limit))
     rows=db.all_rows("SELECT "+TOKEN+" token,j.type type,"+EXACT+" value,COUNT(*) count FROM result_rows LEFT JOIN json_each(result_rows.data) j ON j.key=? WHERE "+where+" GROUP BY token ORDER BY CAST(value AS TEXT) COLLATE studio_text,j.type LIMIT ? OFFSET ?",[column,*args,limit+1,offset])

@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 import uuid
+from contextlib import ExitStack
 from functools import lru_cache
 from pathlib import Path
 
@@ -16,7 +17,7 @@ import ijson
 import psutil
 
 from . import __version__, catalog, db, demo
-from .evidence import read_guard
+from .evidence import evidence_hash, evidence_stamp, matches_case, read_guard, still_current, verified_stamp
 
 PROCESSES = {}
 STOP = threading.Event()
@@ -47,22 +48,21 @@ def hash_case(case_id):
     case = db.one("SELECT * FROM cases WHERE id=?", (case_id,))
     try:
         path = Path(case["path"])
-        before = path.stat()
-        h = hashlib.sha256()
-        read_bytes=0
-        reported=0
-        with read_guard(path),path.open("rb") as source:
-            while chunk := source.read(8 * 1024 * 1024):
-                h.update(chunk)
-                read_bytes+=len(chunk)
-                if read_bytes-reported>=64*1024*1024:
-                    db.execute("UPDATE cases SET hash_progress=? WHERE id=?",(min(99,read_bytes/max(before.st_size,1)*100),case_id))
-                    reported=read_bytes
-        after = path.stat()
-        if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
-            raise ValueError("Image changed during hashing")
-        db.execute("UPDATE cases SET sha256=?,hash_status='complete',hash_progress=100,size=?,mtime_ns=? WHERE id=?",
-                   (h.hexdigest(), after.st_size, after.st_mtime_ns, case_id))
+        with read_guard(path) as source:
+            stamp = evidence_stamp(source)
+            if not matches_case(case, stamp):
+                raise ValueError("Image changed before hashing")
+            size, modified, fingerprint = stamp
+
+            def progress(bytes_read):
+                db.execute("UPDATE cases SET hash_progress=? WHERE id=?", (min(99,bytes_read/max(size,1)*100),case_id))
+
+            digest = evidence_hash(source, progress)
+            if not still_current(path, source, stamp):
+                raise ValueError("Image changed during hashing")
+            db.execute("""UPDATE cases SET sha256=?,hash_status='complete',hash_progress=100,
+                          size=?,mtime_ns=?,file_fingerprint=? WHERE id=?""",
+                       (digest,size,modified,fingerprint,case_id))
     except Exception as exc:
         db.execute("UPDATE cases SET hash_status='failed',hash_error=?,detect_status='unknown',detect_message=? WHERE id=?", (str(exc),"Не удалось прочитать и проверить исходный образ",case_id))
         db.execute("UPDATE runs SET status='failed',finished=?,error='Image could not be hashed',message='Evidence verification failed' WHERE case_id=? AND status='queued'", (db.now(),case_id))
@@ -123,9 +123,10 @@ def ingest(run_id, path):
                 if count%1000==0:
                     c.commit()
                     status=c.execute("SELECT status FROM runs WHERE id=?",(run_id,)).fetchone()[0]
-                    if status=="cancelled":
+                    if status in ("cancelled", "interrupted"):
                         return count,columns
-                    c.execute("UPDATE runs SET row_count=?,message=? WHERE id=?",(count,f"Indexed {count:,} rows",run_id))
+                    c.execute("UPDATE runs SET row_count=?,message=? WHERE id=? AND status='indexing'",
+                              (count,f"Indexed {count:,} rows",run_id))
         mark_indexed(c,run_id,count)
     return count, columns
 
@@ -158,46 +159,73 @@ def friendly_error(stderr, case_os=None):
     return tip + "\n\n" + text[-12000:]
 
 
+def active_run(run_id):
+    row = db.one("SELECT status FROM runs WHERE id=?", (run_id,))
+    return row is not None and row["status"] in ("running", "indexing")
+
+
+def update_active_run(run_id, **values):
+    keys = ",".join(f"{key}=?" for key in values)
+    db.execute(f"UPDATE runs SET {keys} WHERE id=? AND status IN ('running','indexing')",
+               (*values.values(),run_id))
+
+
 def execute(run):
-    case = db.one("SELECT * FROM cases WHERE id=?", (run["case_id"],))
-    pipeline = run.get("purpose") == "pipeline"
-    params = json.loads(run["params"])
-    verify_image = case["kind"] != "demo" and (not pipeline or params["source"] == "image")
-    outdir = db.DATA / "cases" / case["id"] / "runs" / run["id"]
-    outdir.mkdir(parents=True, exist_ok=True)
-    result_path = outdir / ("result.json" if case["kind"]=="demo" and not pipeline else "result.jsonl")
-    log_path = outdir / "engine.log"
-    cfg = json.loads(run["settings_json"])
-    guard=None
+    run_id = run["id"]
+    with PROCESS_LOCK:
+        state = db.one("SELECT status FROM runs WHERE id=?", (run_id,))
+        if STOP.is_set() or not state or state["status"] != "queued":
+            return
+        db.update_run(run_id, started=db.now(), status="running", progress=0, message="Preparing analysis")
+    sources = ExitStack()
     try:
-        db.update_run(run["id"], **runtime_provenance())
+        case = db.one("SELECT * FROM cases WHERE id=?", (run["case_id"],))
+        pipeline = run.get("purpose") == "pipeline"
+        params = json.loads(run["params"])
+        verify_image = case["kind"] != "demo" and (not pipeline or params["source"] == "image")
+        outdir = db.DATA / "cases" / case["id"] / "runs" / run_id
+        outdir.mkdir(parents=True, exist_ok=True)
+        result_path = outdir / ("result.json" if case["kind"]=="demo" and not pipeline else "result.jsonl")
+        log_path = outdir / "engine.log"
+        cfg = json.loads(run["settings_json"])
+        update_active_run(run_id, **runtime_provenance())
+        input_sha256 = case["sha256"]
+        if pipeline and params["source"] == "results":
+            source_run = db.one("SELECT input_sha256 FROM runs WHERE id=? AND case_id=?", (params["source_run"],case["id"]))
+            input_sha256 = source_run["input_sha256"]
         if verify_image:
-            guard=read_guard(Path(case['path']))
-            guard.__enter__()
-            s = Path(case["path"]).stat()
-            if (s.st_size, s.st_mtime_ns) != (case["size"], case["mtime_ns"]):
-                raise ValueError("Evidence changed since hashing. Attach a fresh case before analysis.")
+            source = sources.enter_context(read_guard(case["path"]))
+            if not case["file_fingerprint"]:
+                update_active_run(run_id, message="Verifying saved source hash")
+
+            def hash_progress(_):
+                if not active_run(run_id):
+                    raise InterruptedError("Source verification interrupted")
+
+            stamp = verified_stamp(case, source, hash_progress)
+            if stamp[2] and not case["file_fingerprint"]:
+                db.execute("UPDATE cases SET file_fingerprint=? WHERE id=?", (stamp[2],case["id"]))
         if not pipeline and case['kind'] != 'demo':
             from .symbol_store import prepare
-            db.update_run(run['id'],started=db.now(),status='running',message='Preparing OS analysis data')
+            update_active_run(run_id, message='Preparing OS analysis data')
             cfg = {**cfg,'symbol_dirs':prepare(cfg.get('symbol_dirs',[]),
-                lambda message: db.update_run(run['id'],message=message),
-                lambda: db.one('SELECT status FROM runs WHERE id=?',(run['id'],))['status']=='cancelled')}
+                lambda message: update_active_run(run_id, message=message),
+                lambda: not active_run(run_id))}
         cmd = command_for(case, run["plugin"], params, outdir, cfg) if not pipeline else ["studio-pipeline", json.dumps(params)]
         equivalent = ['vol',*cmd[4:]] if not pipeline else cmd
         if not pipeline:
             equivalent[equivalent.index('studio-jsonl')]='json'
         with PROCESS_LOCK:
-            if db.one("SELECT status FROM runs WHERE id=?", (run["id"],))["status"] == "cancelled":
+            if not active_run(run_id):
                 return
-            db.update_run(run["id"], started=db.now(), status="running", progress=0,
+            db.update_run(run_id,
                           command='Pipeline JSON' if pipeline else powershell_command(equivalent) if case["kind"] != "demo" else "DEMO fixture: " + run["plugin"],
-                          output_dir=str(outdir), input_sha256=case["sha256"], message="Preparing analysis")
+                          output_dir=str(outdir), input_sha256=input_sha256, message="Preparing analysis")
         if case["kind"] == "demo" and not pipeline:
             for n in range(5):
-                if db.one("SELECT status FROM runs WHERE id=?", (run["id"],))["status"] == "cancelled":
+                if not active_run(run_id):
                     return
-                db.update_run(run["id"], progress=n * 20, message="Synthetic demonstration — no memory image analysed")
+                update_active_run(run_id, progress=n * 20, message="Synthetic demonstration — no memory image analysed")
                 time.sleep(0.14)
             data = demo.rows(run["plugin"])
             if "pid" in params:
@@ -216,10 +244,10 @@ def execute(run):
             worker_cmd = [sys.executable,mode,str(job_path)] if getattr(sys,"frozen",False) else [sys.executable,"-u","-m",module,str(job_path)]
             ram=psutil.virtual_memory()
             budget_mb=int(cfg.get("memory_limit_mb",0)) or max(512,int(min(ram.total*.45,ram.available*.7)/(1024**2)))
-            db.update_run(run["id"],worker_command=json.dumps(worker_cmd),memory_budget_mb=budget_mb)
             with PROCESS_LOCK:
-                if db.one("SELECT status FROM runs WHERE id=?", (run["id"],))["status"] == "cancelled":
+                if not active_run(run_id):
                     return
+                db.update_run(run_id,worker_command=json.dumps(worker_cmd),memory_budget_mb=budget_mb)
                 proc = subprocess.Popen(worker_cmd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,shell=False,
                     env={**os.environ,"PYTHONUTF8":"1"},creationflags=(subprocess.CREATE_NO_WINDOW|subprocess.BELOW_NORMAL_PRIORITY_CLASS) if os.name=="nt" else 0)
                 PROCESSES[run["id"]] = proc
@@ -231,7 +259,7 @@ def execute(run):
                     rss=sum(p.memory_info().rss for p in [parent,*parent.children(recursive=True)] if p.is_running())
                     if rss>peak+1024*1024:
                         peak=rss
-                        db.update_run(run["id"],memory_peak_bytes=peak)
+                        update_active_run(run_id,memory_peak_bytes=peak)
                     if rss>budget_mb*1024**2:
                         kill_tree(proc)
                         raise RuntimeError(f"Memory budget exceeded ({budget_mb} MB). The worker was stopped to keep the interface responsive. Increase the analysis memory budget in Settings if needed.")
@@ -246,47 +274,49 @@ def execute(run):
                     matches=list(re.finditer(r"Progress:\s*(\d+(?:\.\d+)?)\s*([^\r\n]*)",chunk.decode("utf-8",errors="replace")))
                     if matches:
                         match=matches[-1]
-                        db.update_run(run["id"],progress=min(float(match[1]),99),message=match[2].strip()[:300])
+                        update_active_run(run_id,progress=min(float(match[1]),99),message=match[2].strip()[:300])
                 time.sleep(0.2)
             code=proc.wait()
-            if db.one("SELECT status FROM runs WHERE id=?", (run["id"],))["status"] == "cancelled":
+            if not active_run(run_id):
                 return
             if code != 0:
                 raise RuntimeError(friendly_error(log_tail(log_path,12000),case.get("os")))
-        if db.one("SELECT status FROM runs WHERE id=?", (run["id"],))["status"] == "cancelled":
-            return
-        if verify_image:
-            final_stat = Path(case["path"]).stat()
-            if (final_stat.st_size, final_stat.st_mtime_ns) != (case["size"],case["mtime_ns"]):
+        with PROCESS_LOCK:
+            if not active_run(run_id):
+                return
+            if verify_image and not still_current(case["path"], source, stamp):
                 raise ValueError("Evidence changed during analysis; output is not verified")
-        db.update_run(run["id"], status="indexing", progress=99, message="Indexing results")
-        count, columns = ingest(run["id"], result_path)
-        if db.one("SELECT status FROM runs WHERE id=?",(run["id"],))["status"]=="cancelled":
+            db.update_run(run_id, status="indexing", progress=99, message="Indexing results")
+        count, columns = ingest(run_id, result_path)
+        if not active_run(run_id):
             return
         summary = json.loads((outdir/"pipeline-summary.json").read_text(encoding="utf8")) if pipeline else {}
         with PROCESS_LOCK:
-            if db.one("SELECT status FROM runs WHERE id=?",(run["id"],))["status"]=="cancelled":
+            if not active_run(run_id):
                 return
-            db.update_run(run["id"], row_count=count,columns_json=json.dumps(columns),
+            if verify_image and not still_current(case["path"], source, stamp):
+                raise ValueError("Evidence changed during analysis; output is not verified")
+            db.update_run(run_id, row_count=count,columns_json=json.dumps(columns),
                           pipeline_summary_json=json.dumps(summary))
             # Publish the detection outcome before exposing a completed run.
             if run.get("purpose", "analysis").startswith("detection"):
                 from .detection import after_run
                 after_run(run,success=True)
-            db.update_run(run["id"], status="completed",progress=100,finished=db.now(),
+            db.update_run(run_id, status="completed",progress=100,finished=db.now(),
                           message="Pipeline row limit reached" if summary.get("limit_reached") else "Analysis complete")
     except Exception as exc:
-        row = db.one("SELECT status FROM runs WHERE id=?", (run["id"],))
-        if row and row["status"] != "cancelled":
-            db.update_run(run["id"], status="failed", finished=db.now(), error=str(exc), message="Analysis failed")
-            if run.get("purpose", "analysis").startswith("detection"):
-                from .detection import after_run
-                after_run(run,success=False)
-    finally:
-        if guard:
-            guard.__exit__(None,None,None)
         with PROCESS_LOCK:
-            PROCESSES.pop(run["id"], None)
+            if active_run(run_id):
+                db.update_run(run_id, status="failed", finished=db.now(), error=str(exc), message="Analysis failed")
+                if run.get("purpose", "analysis").startswith("detection"):
+                    from .detection import after_run
+                    after_run(run,success=False)
+    finally:
+        sources.close()
+        with PROCESS_LOCK:
+            proc = PROCESSES.pop(run_id, None)
+            if proc and proc.poll() is None:
+                kill_tree(proc)
 
 
 def worker():
@@ -341,9 +371,21 @@ def kill_tree(proc):
 
 
 def shutdown():
-    STOP.set()
-    WAKE.set()
-    for run_id in list(PROCESSES):
-        cancel(run_id)
+    with PROCESS_LOCK, db.LOCK, db.connection() as connection:
+        STOP.set()
+        WAKE.set()
+        connection.execute("""UPDATE runs SET status='interrupted',finished=?,message='Application closed during execution'
+                              WHERE status IN ('running','indexing')""", (db.now(),))
+        connection.execute("""UPDATE cases SET detect_status='interrupted',detect_message=?
+            WHERE detect_status IN ('banners','windows','queued') AND EXISTS (
+                SELECT 1 FROM runs WHERE case_id=cases.id AND purpose IN ('detection-banners','detection-windows')
+                AND status='interrupted'
+            ) AND NOT EXISTS (
+                SELECT 1 FROM runs WHERE case_id=cases.id AND purpose IN ('detection-banners','detection-windows')
+                AND status='queued'
+            )""", ('Определение ОС прервано. Запустите повторное определение.',))
+        for proc in PROCESSES.values():
+            if proc.poll() is None:
+                kill_tree(proc)
     if WORKER:
         WORKER.join(timeout=5)

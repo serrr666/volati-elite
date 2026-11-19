@@ -104,6 +104,28 @@ def test_ingest_builds_timeline_before_completion(client34,tmp_path):
     event=client34.get('/api/cases/large/timeline').json()['events'][0]
     assert event['data']['PID']==0 and event['row_idx']==0
 
+
+def test_timeline_upgrades_previously_indexed_mft_results(client34):
+    from volstudio.timeline import INDEX_VERSION
+
+    seed_timeline(count=1)
+    data = {'Created': '2026-01-01T10:00:00Z', 'Updated': '2026-01-01T12:00:00+01:00',
+            'Accessed': '2026-01-01T12:00:00Z', 'Modified': 'invalid'}
+    with db.connection() as c:
+        c.execute("UPDATE runs SET plugin='windows.mftscan.MFTScan',columns_json=? WHERE id='large-run'",
+                  (json.dumps(list(data)),))
+        c.execute("UPDATE result_rows SET data=? WHERE run_id='large-run'", (json.dumps(data),))
+        c.execute("ALTER TABLE timeline_index DROP COLUMN version")
+        c.execute("INSERT INTO timeline_index VALUES('large-run',1)")
+        c.execute("INSERT INTO timeline_events VALUES('large-run',0,'Created',?,?)",
+                  ('2026-01-01T10:00:00.000000+00:00', data['Created']))
+    db.init()
+    events = client34.get('/api/cases/large/timeline?run_id=large-run').json()['events']
+    assert [event['field'] for event in events] == ['Created', 'Updated', 'Accessed']
+    assert events[1]['time'] == '2026-01-01T11:00:00.000000+00:00'
+    assert all(event['data'] == data for event in events)
+    assert db.one("SELECT version FROM timeline_index WHERE run_id='large-run'")['version'] == INDEX_VERSION
+
 def test_unicode_invalid_units_boundaries_and_bounded_pending(monkeypatch):
     monkeypatch.setattr(pipeline,'STRING_FRAGMENT',16)
     text='é🔎证据'*45

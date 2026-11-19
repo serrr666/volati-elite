@@ -9,13 +9,13 @@ from . import db,catalog
 
 def queue(case_id,plugin,purpose):
     from .runner import WAKE
-    if not catalog.get_plugin(plugin):
+    cfg, inventory = catalog.configuration()
+    if not catalog.get_plugin(plugin, inventory):
         db.execute("UPDATE cases SET detect_status='unknown',detect_message=? WHERE id=?",("Required detection plugin is not installed",case_id))
         return
-    cfg=db.settings()
     db.execute("""INSERT INTO runs (id,case_id,plugin,params,status,created,engine_version,offline,settings_json,purpose)
                   VALUES (?,?,?,'{}','queued',?,?,?,?,?)""",
-               (uuid.uuid4().hex[:16],case_id,plugin,db.now(),catalog.CATALOG["version"],int(cfg["offline"]),json.dumps(cfg),purpose))
+               (uuid.uuid4().hex[:16],case_id,plugin,db.now(),inventory["version"],int(cfg["offline"]),json.dumps(cfg),purpose))
     WAKE.set()
 
 

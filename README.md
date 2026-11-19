@@ -4,14 +4,14 @@ Volati Elite is a Windows desktop interface for [Volatility 3](https://github.co
 
 ## Download
 
-[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.14-test.1)
+[Windows x64 portable test build](https://github.com/serrr666/volati-elite/releases/tag/v0.4.18-test.1)
 
 Download `VolatiElite.exe` from the release assets and run it.
 
 ## Quick start
 
 1. Drop a memory image into the window, or choose it through the file dialog.
-2. Wait for SHA-256 verification and review the detected OS. Analysis starts offline by default. If a plugin requires OS data, open **Settings → Analysis** to add matching local data or allow retrieval when appropriate.
+2. Wait for SHA-256 verification and review the detected OS. The engine can retrieve missing Windows kernel data by default. Enable **Offline mode** in **Settings → Analysis** before opening evidence if your workflow requires local-only analysis. You can also add matching local OS data there.
 3. Start with processes, network connections or command lines. Select several plugins to queue them together.
 4. Filter the results, bookmark useful rows and write down your findings in the investigation notebook.
 5. Use **Export → Copy CSV** to copy the results, or download them as CSV or JSON. Notes can be saved as TXT.

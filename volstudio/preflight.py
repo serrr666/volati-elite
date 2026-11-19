@@ -2,6 +2,7 @@
 from pathlib import Path
 import re
 import struct
+from .vmsd import FORMAT as VMSD_FORMAT
 
 
 
@@ -48,7 +49,7 @@ def _inspect_source(path):
         return {'kind':'auxiliary','format':'Linux System.map · kernel address map',
                 'message':'Это карта адресов ядра, а не образ памяти. Она сама по себе не содержит процессов Linux и не заменяет ISF JSON.'}
     if b'snapshot.' in head and (path.suffix.lower()=='.vmsd' or head.startswith(b'.encoding')):
-        return {'kind':'auxiliary','format':'VMware snapshot inventory · VMSD metadata',
+        return {'kind':'auxiliary','format':VMSD_FORMAT,
                 'message':'Это описание снимков VMware, а не содержимое RAM. Откройте соответствующий VMSS/VMEM/VMSN; поиск строк в метаданных доступен.'}
     if _ext_filesystem(head):
         return {'kind':'auxiliary','format':'ext filesystem partition image','message':'Это образ раздела с файловой системой ext, а не снимок RAM. Плагины процессов и сети здесь неприменимы. Используйте инструмент анализа дисков; поиск строк читает байты раздела без восстановления файлов.'}

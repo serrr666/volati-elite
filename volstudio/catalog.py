@@ -5,9 +5,17 @@ import json
 import os
 import subprocess
 import sys
+from contextlib import ExitStack
 from importlib.metadata import version
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from threading import Lock
+
+from . import db
 
 CATALOG = {"version": None, "plugins": [], "warnings": [], "status": "loading"}
+UPDATE_LOCK = Lock()
+STATE_LOCK = Lock()
 
 GROUPS = {
     "process": ("pslist", "psscan", "pstree", "cmdline", "envars", "handles", "getsids", "getservicesids", "privs", "privileges", "threads", "thrdscan", "sessions", "psaux", "pscallstack", "dlllist", "librarylist", "maps", "memmap", "vadinfo", "vadwalk", "pidhashtable", "joblinks", "ptrace", "elfs", "capabilities"),
@@ -76,29 +84,41 @@ def discover(plugin_dirs):
 def refresh(settings, publish=True):
     global CATALOG
     try:
-        if getattr(sys, "frozen", False):
-            from . import db
-            output = db.DATA / "catalog-discovery.json"
-            output.parent.mkdir(parents=True,exist_ok=True)
-            command = [sys.executable,"--catalog",str(output),json.dumps(settings["plugin_dirs"])]
-        else:
-            command = [sys.executable,"-m","volstudio.catalog",json.dumps(settings["plugin_dirs"])]
-        proc = subprocess.run(command,
-                              capture_output=True, text=True, encoding="utf-8", timeout=120,
-                              env={**os.environ, "PYTHONUTF8": "1"},
-                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-        if proc.returncode:
-            raise RuntimeError(proc.stderr[-4000:])
-        result = json.loads(output.read_text(encoding="utf-8")) if getattr(sys,"frozen",False) else json.loads(proc.stdout)
+        with ExitStack() as stack:
+            directories = json.dumps(settings["plugin_dirs"])
+            output = None
+            if getattr(sys, "frozen", False):
+                db.DATA.mkdir(parents=True, exist_ok=True)
+                staging = stack.enter_context(TemporaryDirectory(prefix="catalog-", dir=db.DATA))
+                output = Path(staging)/"result.json"
+                command = [sys.executable,"--catalog",str(output),directories]
+            else:
+                command = [sys.executable,"-m","volstudio.catalog",directories]
+            proc = subprocess.run(command,
+                                  capture_output=True, text=True, encoding="utf-8", timeout=120,
+                                  env={**os.environ, "PYTHONUTF8": "1"},
+                                  creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            if proc.returncode:
+                details = output.with_suffix(".error.txt") if output else None
+                diagnostic = details.read_text(encoding="utf-8") if details and details.is_file() else proc.stderr
+                raise RuntimeError(diagnostic[-4000:] or f"Plugin discovery exited with code {proc.returncode}")
+            result = json.loads(output.read_text(encoding="utf-8") if output else proc.stdout)
     except Exception as exc:
         result = {"version": None, "plugins": [], "warnings": [str(exc)], "status": "error"}
     if publish:
-        CATALOG=result
+        with STATE_LOCK:
+            CATALOG=result
     return result
 
 
-def get_plugin(plugin_id):
-    return next((p for p in CATALOG["plugins"] if p["id"] == plugin_id), None)
+def configuration():
+    with STATE_LOCK:
+        return db.settings(), CATALOG
+
+
+def get_plugin(plugin_id, inventory=None):
+    inventory = CATALOG if inventory is None else inventory
+    return next((p for p in inventory["plugins"] if p["id"] == plugin_id), None)
 
 
 def validate_params(plugin, params):

@@ -11,9 +11,15 @@ export function errorMessage(detail:unknown,status:number):string{
   return `HTTP ${status}`;
 }
 
+export class ApiError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
+}
+
 export async function api<T>(path:string, options:RequestInit={}):Promise<T> {
   const response=await fetch('/api'+path,{...options,headers:{...(options.body && !(options.body instanceof FormData)?{'Content-Type':'application/json'}:{}),...options.headers}});
-  if(!response.ok){let message=`HTTP ${response.status}`;try{const data=await response.json();message=errorMessage(data.detail,response.status)}catch{/* retain HTTP status */}throw new Error(message)}
+  if(!response.ok){let message=`HTTP ${response.status}`;try{const data=await response.json();message=errorMessage(data.detail,response.status)}catch{/* retain HTTP status */}throw new ApiError(response.status,message)}
   return response.json();
 }
 export const post=<T>(path:string,data:unknown={})=>api<T>(path,{method:'POST',body:JSON.stringify(data)});

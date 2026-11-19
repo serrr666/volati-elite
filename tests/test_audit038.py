@@ -80,6 +80,26 @@ def test_changed_file_and_failed_verification_get_new_case(workspace38):
     db.execute("UPDATE cases SET hash_status='failed' WHERE id=?",(second['id'],))
     third=attach(c,p).json();assert third['id']!=second['id'] and len(calls)==3
 
+@pytest.mark.parametrize('replacement', [False, True])
+def test_same_size_and_timestamp_do_not_reuse_changed_source(workspace38, replacement):
+    client, tmp, _ = workspace38
+    path = tmp/'evidence.raw'
+    path.write_bytes(b'A'*4096)
+    initial = attach(client,path).json()
+    stat = path.stat()
+    if replacement:
+        other = tmp/'replacement.raw'
+        other.write_bytes(b'B'*4096)
+        other.replace(path)
+    else:
+        path.write_bytes(b'B'*4096)
+    os.utime(path, ns=(stat.st_atime_ns,stat.st_mtime_ns))
+    assert path.stat().st_mtime_ns == stat.st_mtime_ns
+    response = attach(client,path)
+    assert response.status_code == 201
+    assert response.json()['id'] != initial['id']
+    assert response.json()['sha256'] != initial['sha256']
+
 def test_simultaneous_attachments_share_one_history(workspace38):
     c,tmp,calls=workspace38;p=tmp/'concurrent.raw';p.write_bytes(b'\0'*8192)
     with ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(lambda _:attach(c,p).json(),range(4)))

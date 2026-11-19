@@ -176,7 +176,9 @@ def main():
         def pickFile(self,language):
             from . import db
             title=native_text("Open memory image","Открыть образ памяти",language)
-            filters=native_text("Memory images","Образы памяти",language)+" (*.raw *.mem *.vmem *.vmss *.vmsn *.dmp *.lime *.bin *.elf *.img *.core *.kcore);;"+native_text("All files","Все файлы",language)+" (*)"
+            filters = (native_text("Supported sources", "Поддерживаемые файлы", language)
+                       + " (*.raw *.mem *.vmem *.vmss *.vmsn *.dmp *.lime *.bin *.elf *.img *.core *.kcore *.vmsd);;"
+                       + native_text("All files", "Все файлы", language) + " (*)")
             selected,_=QFileDialog.getOpenFileName(window,title,db.settings().get('last_image_directory',''),filters)
             if selected:
                 db.save_settings({'last_image_directory':str(Path(selected).parent)})

@@ -1,12 +1,12 @@
 import {useEffect, useRef, useState} from 'react';
 import {ArrowUpRight, Copy, Download, FileText} from 'lucide-react';
-import {api, bytes} from './api';
+import {api, ApiError, bytes} from './api';
 import {tr} from './i18n';
 import {PageNavigation} from './PageNavigation';
 
-export type ExtractedFile = {name: string; size: number};
+export type ExtractedFile = {name: string; size: number | null; available?: boolean};
 type Digests = {md5: string; sha256: string};
-type HashState = Digests | 'failed';
+type HashState = Digests | 'failed' | 'unavailable';
 
 export function RunArtifacts({runId, files, notify, failure}: {
     runId: string;
@@ -29,11 +29,12 @@ export function RunArtifacts({runId, files, notify, failure}: {
         async function calculate() {
             for (const file of files.slice(page * pageSize, (page + 1) * pageSize)) {
                 if (controller.signal.aborted) break;
+                if (file.available === false) continue;
                 let result: HashState;
                 try {
                     result = await api<Digests>(`/runs/${runId}/artifact-hashes?name=${encodeURIComponent(file.name)}`, {signal: controller.signal});
-                } catch {
-                    result = 'failed';
+                } catch (error) {
+                    result = error instanceof ApiError && error.status === 404 ? 'unavailable' : 'failed';
                 }
                 if (controller.signal.aborted) break;
                 const saved = result;
@@ -48,14 +49,20 @@ export function RunArtifacts({runId, files, notify, failure}: {
     return <div className="artifacts-view">
         {visible.map(file => {
             const digest = results.get(file.name);
+            const unavailable = file.available === false || digest === 'unavailable';
+            const fileInfo = <>
+                <span className="file-icon"><FileText size={20}/></span>
+                <span><strong>{file.name}</strong>{file.size !== null && <small>{bytes(file.size)}</small>}</span>
+            </>;
             return <article className="extracted-artifact" key={file.name}>
+                {unavailable ? <div className="artifact-unavailable">{fileInfo}</div> :
                 <a href={`/api/runs/${runId}/artifact?name=${encodeURIComponent(file.name)}`}>
-                    <span className="file-icon"><FileText size={20}/></span>
-                    <span><strong>{file.name}</strong><small>{bytes(file.size)}</small></span>
+                    {fileInfo}
                     <Download size={16}/>
-                </a>
+                </a>}
                 <div className="artifact-digests">
-                    {digest === 'failed' ? <><span>{tr('Не удалось вычислить хеши')}</span><button className="text-button" onClick={() => setAttempt(value => value + 1)}>{tr('Повторить')}</button></> : digest ?
+                    {unavailable ? <span>{tr('Файл больше недоступен. Запись о выгрузке сохранена.')}</span>
+                    : digest === 'failed' ? <><span>{tr('Не удалось вычислить хеши')}</span><button className="text-button" onClick={() => setAttempt(value => value + 1)}>{tr('Повторить')}</button></> : digest ?
                         (['md5', 'sha256'] as const).map(key => <div key={key}>
                             <span>{key === 'md5' ? 'MD5' : 'SHA-256'}</span>
                             <code>{digest[key]}</code>
